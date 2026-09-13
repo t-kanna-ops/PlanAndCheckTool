@@ -1565,7 +1565,7 @@
     let cStrengthText = '';
     const allStrengths = Array.from(new Set([...sortedTopDPs, ...cStrDescs]));
     if (allStrengths.length > 0) {
-      cStrengthText = `私の強みは、DP分析に基づく「${allStrengths.join('」や「')}」です。これまでの学びを通じて自身の強みを磨き、主体的に課題へ取り組む姿勢を培ってきました。`;
+      cStrengthText = `私の強みは、「${allStrengths.join('」や「')}」です。これまでの学びを通じて自身の強みを磨き、主体的に課題へ取り組む姿勢を培ってきました。`;
     } else {
       cStrengthText = `私の強みは、自発的な行動力と継続的な学修意欲です。これまでの学びを通じて自身の資質を磨き、主体的に取り組む姿勢を培ってきました。`;
     }
@@ -1575,12 +1575,12 @@
       cGradSentences.push(`「${cWeakDescs.join('」や「')}」の能力克服に努めつつ`);
     }
     let cActions = [];
-    if (c.step4Curriculum) cActions.push(`正課内での${c.step4Curriculum}`);
-    if (c.step4External) cActions.push(`正課外での${c.step4External}`);
+    if (c.step4Curriculum) cActions.push(`授業においては特に${c.step4Curriculum}`);
+    if (c.step4External) cActions.push(`学外での${c.step4External}`);
     if (cActions.length > 0) {
       cGradSentences.push(`${cActions.join('や')}に積極的に挑戦していきます`);
     }
-    let cGradText = `卒業までに、${cGradSentences.join('、')}。学びと経験を積み重ねることで、専門知識と実践力を備えた理想的な姿で卒業し、社会で活躍できる人材を目指します。`;
+    let cGradText = `卒業までに、${cGradSentences.join('、')}。学びと経験を積み重ねることで、専門知識と実践力を備えた社会で活躍できる人材を目指します。`;
 
     let cReasonClean = formatReasonText(c.step2);
     let cJobText = `卒業後は${c.step1}の分野で活躍することを希望しています。${cReasonClean}という強い思いがあるため、この目標の実現に向けて着実にステップアップしていきます。`;
@@ -1591,11 +1591,11 @@
     const tStrDescs = (t.strSelected || []).map(getDPDescription);
     const tWeakDescs = (t.weakSelected || []).map(getDPDescription);
 
-    let tAcadText = `今学期（${t.targetTerm}）は、${t.step1}の達成を目指します。そのために正課内において${t.step4Curriculum}に注力し、優れた評価を目指して学業成績の向上に努めます。`;
+    let tAcadText = `今学期（${t.targetTerm}）は、${t.step1}の達成を目指します。そのために授業においては特に${t.step4Curriculum}に注力し、優れた評価を目指して学業成績の向上に努めます。`;
 
     let tCareerAct = t.step4External || '資格取得や自主的な課題制作・課外活動';
     let tCareerDP = tStrDescs.length > 0 ? `強みである「${tStrDescs.join('」や「')}」を高めながら、` : '';
-    let tCareerText = `正課外では、${tCareerDP}${tCareerAct}に積極的に取り組むことで専門的なスキルや知識の修得を図り、将来のキャリアに向けた実践力を養います。`;
+    let tCareerText = `授業外では、${tCareerDP}${tCareerAct}に積極的に取り組むことで専門的なスキルや知識の修得を図り、将来のキャリアに向けた実践力を養います。`;
 
     let tExtAct = t.step4Criteria || t.step2 || '日々の目標管理と学習成果の定着';
     let tExtDP = tWeakDescs.length > 0 ? `「${tWeakDescs.join('」や「')}」の克服を意識し、` : '';
