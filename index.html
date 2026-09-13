@@ -2,8 +2,8 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>学修ポートフォリオ＆キャリアプランナー</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>学修ポートフォリオ ＆ キャリアプランナー</title>
   <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
@@ -16,50 +16,62 @@
       --bg: #f8fafc;
       --text: #1e293b;
     }
+    * {
+      box-sizing: border-box;
+    }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-      line-height: 1.6;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.5;
       color: var(--text);
       background-color: var(--bg);
       margin: 0;
-      padding: 20px;
+      padding: 12px;
     }
     .container {
       max-width: 1000px;
       margin: 0 auto;
       background: #ffffff;
-      padding: 25px;
+      padding: 16px;
       border-radius: 12px;
-      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     }
     h1 {
-      font-size: 1.5rem;
+      font-size: 1.3rem;
       color: var(--primary);
       border-bottom: 2px solid var(--primary);
       padding-bottom: 8px;
       margin-top: 0;
+      margin-bottom: 16px;
     }
     
-    /* タブナビゲーション */
+    /* スマホ対応メインタブ */
     .nav-tabs {
       display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
+      gap: 6px;
+      margin-bottom: 16px;
       border-bottom: 2px solid var(--border);
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
     }
     .tab-btn {
-      padding: 10px 20px;
+      flex: 1;
+      min-width: 140px;
+      padding: 10px 8px;
       border: none;
       background: none;
-      font-size: 1rem;
+      font-size: 0.9rem;
       font-weight: bold;
       color: #64748b;
       cursor: pointer;
       border-bottom: 3px solid transparent;
+      white-space: nowrap;
+      text-align: center;
     }
     .tab-btn.active {
       color: var(--primary);
       border-bottom-color: var(--primary);
+      background-color: var(--primary-light);
+      border-radius: 6px 6px 0 0;
     }
     .tab-content {
       display: none;
@@ -70,16 +82,18 @@
 
     /* セクション見出し・ステップ */
     h2 {
-      font-size: 1.1rem;
-      margin-top: 24px;
+      font-size: 1.0rem;
+      margin-top: 20px;
+      margin-bottom: 12px;
       color: #334155;
       background: var(--primary-light);
-      padding: 8px 12px;
+      padding: 8px 10px;
       border-left: 4px solid var(--primary);
       border-radius: 0 4px 4px 0;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
+      flex-wrap: wrap;
     }
     .step-badge {
       background: var(--primary);
@@ -87,32 +101,33 @@
       font-size: 0.75rem;
       padding: 2px 8px;
       border-radius: 12px;
-      font-weight: normal;
+      font-weight: bold;
+      white-space: nowrap;
     }
 
     .notice {
       background: #ecfdf5;
       border: 1px solid #a7f3d0;
       color: #047857;
-      padding: 10px 14px;
+      padding: 10px;
       border-radius: 6px;
-      font-size: 0.85rem;
-      margin-bottom: 16px;
-      line-height: 1.5;
+      font-size: 0.8rem;
+      margin-bottom: 14px;
+      line-height: 1.4;
     }
 
     /* フォーム・コントロール */
     .controls-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
       background: #f1f5f9;
-      padding: 14px;
+      padding: 12px;
       border-radius: 8px;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
     .form-group {
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
     .form-group.no-margin {
       margin-bottom: 0;
@@ -126,12 +141,13 @@
     }
     input[type="text"], input[type="number"], select, textarea {
       width: 100%;
-      padding: 8px 12px;
+      padding: 10px 10px;
       border: 1px solid var(--border);
       border-radius: 6px;
       box-sizing: border-box;
       font-size: 0.9rem;
       background-color: #fff;
+      -webkit-appearance: none;
     }
     input:focus, select:focus, textarea:focus {
       outline: none;
@@ -139,13 +155,82 @@
       box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
     }
 
+    /* スマホ対応サブモードタブ（キャリアビジョン vs 今学期の目標） */
+    .sub-mode-tabs {
+      display: flex;
+      background: #e2e8f0;
+      padding: 4px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      gap: 4px;
+    }
+    .sub-tab-btn {
+      flex: 1;
+      padding: 10px 4px;
+      border: none;
+      background: transparent;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: #475569;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    .sub-tab-btn.active {
+      background: #ffffff;
+      color: var(--primary);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    /* ステップカード容器 */
+    .step-card {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+
+    /* 入力支援ヒント用タグチップ */
+    .hint-chip-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+      margin-bottom: 8px;
+    }
+    .chip {
+      background: #e0f2fe;
+      color: #0369a1;
+      border: 1px solid #bae6fd;
+      padding: 4px 10px;
+      border-radius: 16px;
+      font-size: 0.78rem;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.2s;
+      display: inline-flex;
+      align-items: center;
+    }
+    .chip:hover, .chip:active {
+      background: #bae6fd;
+    }
+    .chip-label {
+      font-size: 0.72rem;
+      color: #64748b;
+      margin-bottom: 2px;
+      display: block;
+    }
+
     /* チェックボックスグループ */
     .checkbox-group {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
+      gap: 6px;
       background: #ffffff;
-      padding: 10px;
+      padding: 8px;
       border: 1px solid var(--border);
       border-radius: 6px;
       max-height: 120px;
@@ -154,11 +239,10 @@
     .checkbox-label {
       display: inline-flex;
       align-items: center;
-      gap: 5px;
-      font-size: 0.85rem;
+      gap: 4px;
+      font-size: 0.8rem;
       color: #334155;
       cursor: pointer;
-      user-select: none;
     }
     .checkbox-label.highlight {
       font-weight: bold;
@@ -172,22 +256,23 @@
     /* テーブルスタイル */
     .table-wrapper {
       overflow-x: auto;
-      max-height: 400px;
+      max-height: 380px;
       border: 1px solid var(--border);
       border-radius: 8px;
-      margin-top: 10px;
+      margin-top: 8px;
+      -webkit-overflow-scrolling: touch;
     }
     table {
       width: 100%;
       border-collapse: separate;
       border-spacing: 0;
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       text-align: center;
     }
     th, td {
       border-right: 1px solid var(--border);
       border-bottom: 1px solid var(--border);
-      padding: 8px;
+      padding: 8px 6px;
       white-space: nowrap;
     }
     th {
@@ -199,7 +284,6 @@
       font-weight: 600;
     }
     tr:nth-child(even) { background-color: #f8fafc; }
-    tr:hover { background-color: #f1f5f9; }
 
     .col-subject {
       text-align: left;
@@ -215,7 +299,7 @@
 
     /* 成績入力欄 */
     .score-input {
-      width: 70px !important;
+      width: 60px !important;
       padding: 4px;
       text-align: center;
       font-weight: bold;
@@ -226,52 +310,51 @@
       color: #047857;
     }
 
-    /* 達成度記号 */
-    .mark-target { color: #dc2626; font-weight: bold; font-size: 1.0rem; }
-    .mark-related { color: #2563eb; font-weight: bold; font-size: 0.9rem; }
+    .mark-target { color: #dc2626; font-weight: bold; }
+    .mark-related { color: #2563eb; font-weight: bold; }
 
     /* サマリーカード */
     .dp-summary-panel {
-      margin-top: 16px;
-      padding: 14px;
+      margin-top: 14px;
+      padding: 10px;
       background: #ecfdf5;
       border: 1px solid #a7f3d0;
       border-radius: 8px;
     }
     .dp-cards {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
       gap: 6px;
-      margin-top: 8px;
+      margin-top: 6px;
     }
     .dp-card {
       background: #ffffff;
       border: 1px solid #6ee7b7;
       border-radius: 6px;
-      padding: 6px;
+      padding: 4px 6px;
       display: flex;
+      flex-direction: column;
       align-items: center;
-      justify-content: space-between;
-      font-size: 0.8rem;
+      font-size: 0.75rem;
     }
-    .dp-name { font-weight: bold; color: #065f46; }
-    .dp-val { font-weight: bold; color: #059669; font-size: 0.95rem; }
+    .dp-name { font-weight: bold; color: #065f46; text-align: center; }
+    .dp-val { font-weight: bold; color: #059669; font-size: 0.9rem; }
 
     /* チャートエリア */
     .chart-box {
-      max-width: 520px;
-      margin: 15px auto;
-      height: 380px;
+      max-width: 450px;
+      margin: 10px auto;
+      height: 320px;
       position: relative;
     }
     .chart-controls {
       display: flex;
       justify-content: center;
       align-items: center;
-      gap: 15px;
-      margin-top: 10px;
+      gap: 10px;
+      margin-top: 8px;
       background: #f8fafc;
-      padding: 8px;
+      padding: 6px;
       border-radius: 6px;
     }
 
@@ -279,66 +362,62 @@
     .btn {
       background: var(--primary);
       color: #fff;
-      padding: 10px 18px;
+      padding: 12px 16px;
       border: none;
       border-radius: 6px;
       font-weight: bold;
+      font-size: 0.9rem;
       cursor: pointer;
+      width: 100%;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
       transition: background 0.2s;
     }
-    .btn:hover { background: var(--accent); }
-    .btn-secondary {
-      background: #64748b;
-    }
-    .btn-secondary:hover {
-      background: #475569;
+    .btn:hover, .btn:active { background: var(--accent); }
+    .btn-secondary { background: #64748b; }
+    .btn-secondary:hover { background: #475569; }
+    .btn-sm {
+      padding: 4px 8px;
+      min-height: auto;
+      font-size: 0.75rem;
+      width: auto;
     }
     
     /* Planタブ用DPグリッド */
     .dp-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 8px;
-      max-height: 220px;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 6px;
+      max-height: 200px;
       overflow-y: auto;
       border: 1px solid var(--border);
-      padding: 10px;
+      padding: 8px;
       border-radius: 6px;
       background: #fafafa;
     }
     .dp-item {
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       background: #fff;
-      padding: 6px 10px;
+      padding: 6px 8px;
       border: 1px solid #e2e8f0;
       border-radius: 6px;
-      transition: all 0.2s;
     }
 
     /* DP順位別のカラー表示 */
-    .dp-rank-red {
-      border-left: 5px solid #ef4444 !important;
-      background-color: #fef2f2 !important;
-    }
-    .dp-rank-orange {
-      border-left: 5px solid #f97316 !important;
-      background-color: #fff7ed !important;
-    }
-    .dp-rank-blue {
-      border-left: 5px solid #3b82f6 !important;
-      background-color: #eff6ff !important;
-    }
-    .dp-rank-green {
-      border-left: 5px solid #10b981 !important;
-      background-color: #ecfdf5 !important;
-    }
+    .dp-rank-red { border-left: 5px solid #ef4444 !important; background-color: #fef2f2 !important; }
+    .dp-rank-orange { border-left: 5px solid #f97316 !important; background-color: #fff7ed !important; }
+    .dp-rank-blue { border-left: 5px solid #3b82f6 !important; background-color: #eff6ff !important; }
+    .dp-rank-green { border-left: 5px solid #10b981 !important; background-color: #ecfdf5 !important; }
 
     .dp-badge-rank {
-      font-size: 0.72rem;
-      padding: 2px 6px;
+      font-size: 0.7rem;
+      padding: 2px 5px;
       border-radius: 4px;
       color: #ffffff;
       font-weight: bold;
@@ -352,12 +431,12 @@
 
     #error-message {
       display: none;
-      padding: 10px;
+      padding: 8px;
       background-color: #fef2f2;
       color: #991b1b;
       border-radius: 6px;
-      margin-bottom: 12px;
-      font-size: 0.85rem;
+      margin-bottom: 10px;
+      font-size: 0.8rem;
     }
   </style>
 </head>
@@ -366,60 +445,60 @@
 <div class="container">
   <h1>学修ポートフォリオ ＆ キャリアプランナー</h1>
 
+  <!-- 全体共通 学科・年次設定 -->
+  <div class="controls-grid">
+    <div class="form-group no-margin">
+      <label for="department-select">所属学科</label>
+      <select id="department-select">
+        <option value="art_expression01.csv">情報表現学科</option>
+        <option value="art_expression02.csv">芸術表現学科</option>
+        <option value="art_expression03.csv">総合政策学科</option>
+        <option value="art_expression04.csv">スポーツマネジメント学科</option>
+      </select>
+    </div>
+
+    <div class="form-group no-margin">
+      <label for="year-select">配当年次フィルタ</label>
+      <select id="year-select">
+        <option value="all">すべて表示</option>
+        <option value="１">1年次</option>
+        <option value="２">2年次</option>
+        <option value="３">3年次</option>
+        <option value="４">4年次</option>
+      </select>
+    </div>
+  </div>
+
   <!-- タブ切替 -->
   <div class="nav-tabs">
-    <button class="tab-btn active" onclick="switchTab('check')">📝 Check (成績登録・PDCA振り返り)</button>
-    <button class="tab-btn" onclick="switchTab('plan')">🎯 Plan (目標設定・履修計画)</button>
+    <button class="tab-btn active" onclick="switchTab('check')">📝 Check (成績入力・分析)</button>
+    <button class="tab-btn" onclick="switchTab('plan')">🎯 Plan (目標・ステップ入力)</button>
   </div>
 
   <!-- CHECK TAB -->
   <div id="tab-check" class="tab-content active">
     
-    <!-- STEP 1 -->
-    <h2><span class="step-badge">Step 1</span> 学科・表示条件の設定</h2>
+    <h2><span class="step-badge">Step 1</span> 履修検索・絞り込み</h2>
     <div class="controls-grid">
-      <div class="form-group no-margin">
-        <label for="department-select">所属学科</label>
-        <select id="department-select">
-          <option value="art_expression01.csv">情報表現学科</option>
-          <option value="art_expression02.csv">芸術表現学科</option>
-          <option value="art_expression03.csv">総合政策学科</option>
-          <option value="art_expression04.csv">スポーツマネジメント学科</option>
-        </select>
+      <div class="form-group no-margin" style="grid-column: 1 / -1;">
+        <label for="search-input">キーワード検索</label>
+        <input type="text" id="search-input" placeholder="例：プログラミング、映像">
       </div>
-
-      <div class="form-group no-margin">
-        <label for="year-select">配当年次フィルタ</label>
-        <select id="year-select">
-          <option value="all">すべて表示</option>
-          <option value="１">1年次</option>
-          <option value="２">2年次</option>
-          <option value="３">3年次</option>
-          <option value="４">4年次</option>
-        </select>
-      </div>
-
-      <div class="form-group no-margin">
-        <label for="search-input">科目名キーワード検索</label>
-        <input type="text" id="search-input" placeholder="例：プログラミング">
-      </div>
-
       <div class="form-group no-margin" style="grid-column: 1 / -1;">
         <label>科目区分絞り込み</label>
         <div class="checkbox-group" id="category-checkboxes-container"></div>
       </div>
     </div>
 
-    <!-- STEP 2 -->
-    <h2><span class="step-badge">Step 2</span> 履修済み科目の成績（点数）入力</h2>
+    <h2><span class="step-badge">Step 2</span> 履修修得（点数）入力</h2>
     <div class="notice">
-      💡 履修・修得した科目の「点数（0〜100点）」を入力してください（単位修得は60点以上）。点数に応じて重み倍率（90点以上: 1.0 / 80点台: 0.9 / 70点台: 0.8 / 60点台: 0.7）が掛け合わされ、DPポイントが自動計算されます。
+      💡 修得点数（60〜100点）を入力してください。点数に応じた倍率（90点以上:1.0 / 80点台:0.9 / 70点台:0.8 / 60点台:0.7）でDPが算出されます。
     </div>
 
     <div id="error-message"></div>
 
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-      <span id="subject-count" style="font-weight: bold; font-size: 0.85rem; color: var(--primary);">表示件数: 0 件</span>
+      <span id="subject-count" style="font-weight: bold; font-size: 0.8rem; color: var(--primary);">表示件数: 0 件</span>
     </div>
 
     <div class="table-wrapper">
@@ -429,21 +508,20 @@
       </table>
     </div>
 
-    <!-- STEP 3 -->
-    <h2><span class="step-badge">Step 3</span> DP獲得状況・能力バランスの確認</h2>
+    <h2><span class="step-badge">Step 3</span> 獲得DP集計 ＆ 能力レーダー</h2>
     
     <div class="dp-summary-panel">
-      <div style="font-size: 0.85rem; font-weight: bold; color: #065f46;">【修得科目（点数入力済）の獲得DP集計ポイント】</div>
+      <div style="font-size: 0.8rem; font-weight: bold; color: #065f46;">【修得済みの獲得DPポイント】</div>
       <div class="dp-cards" id="dp-cards-container"></div>
     </div>
 
     <div class="chart-controls">
-      <span style="font-size: 0.85rem; font-weight: bold; color: #334155;">グラフ表示形式:</span>
-      <label style="font-size: 0.85rem; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
-        <input type="radio" name="chartDisplayType" value="pt" checked> 合算ポイント (pt)
+      <span style="font-size: 0.8rem; font-weight: bold;">表示形式:</span>
+      <label style="font-size: 0.8rem; font-weight: bold; cursor: pointer;">
+        <input type="radio" name="chartDisplayType" value="pt" checked> 合算pt
       </label>
-      <label style="font-size: 0.85rem; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
-        <input type="radio" name="chartDisplayType" value="percent"> 達成割合 (%)
+      <label style="font-size: 0.8rem; font-weight: bold; cursor: pointer;">
+        <input type="radio" name="chartDisplayType" value="percent"> 達成割合(%)
       </label>
     </div>
 
@@ -455,112 +533,158 @@
 
   <!-- PLAN TAB -->
   <div id="tab-plan" class="tab-content">
-    <h2>1. 将来のビジョンと現状</h2>
-    <div class="form-group">
-      <label>興味のある分野・領域</label>
-      <input type="text" id="interest" placeholder="例：映像制作、サウンドデザイン、Web開発">
-    </div>
-    <div class="form-group">
-      <label>将来希望する業種・職種</label>
-      <input type="text" id="careerTarget" placeholder="例：ゲーム会社（サウンドデザイナー）、IT企業（エンジニア）">
-    </div>
-    <div class="form-group">
-      <label>卒業時の希望進路タイプ</label>
-      <select id="careerType">
-        <option value="民間企業への就職">民間企業への就職</option>
-        <option value="フリーランス・個人クリエイター">フリーランス・個人クリエイター</option>
-        <option value="大学院・専門学校等への進学">大学院・専門学校等への進学</option>
-        <option value="起業・事業立ち上げ">起業・事業立ち上げ</option>
-        <option value="未定・模索中">未定・模索中</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label>現在の強み・得意なこと・経験</label>
-      <input type="text" id="strengthsText" placeholder="例：DTMでの楽曲制作経験、コツコツ継続できる性格">
+
+    <!-- サブモード切替（指針のキャリアビジョンと学期目標） -->
+    <div class="sub-mode-tabs">
+      <button class="sub-tab-btn active" onclick="switchSubMode('career')">🚀 キャリアビジョン (長期)</button>
+      <button class="sub-tab-btn" onclick="switchSubMode('term')">⏱️ 今学期の目標 (短期)</button>
     </div>
 
-    <h2>2. 伸ばしたい / 克服したいDPの選択</h2>
-    <div class="form-group">
-      <label>さらに伸ばしたい能力 (最大3つ) <span style="font-weight:normal; font-size:0.8rem; color:#64748b;">※色表示: 合算pt 上位1〜3位=赤、4〜7位=オレンジ</span></label>
-      <div id="dpStrengthsContainer" class="dp-grid"></div>
-    </div>
-    <div class="form-group">
-      <label>克服したい・補いたい能力 (最大3つ) <span style="font-weight:normal; font-size:0.8rem; color:#64748b;">※色表示: 達成割合 ワースト1〜3位=青、ワースト4〜7位=緑</span></label>
-      <div id="dpWeaknessesContainer" class="dp-grid"></div>
+    <div class="notice" id="step-intro-notice">
+      💡 <b>考え始めることからスタート！</b> 最初からすべて埋める必要はありません。Step1の一言入力から始めてみましょう。
     </div>
 
-    <h2>3. 次学期の目標設定と推奨科目の検索</h2>
-    <div class="form-group">
-      <label>次学期の年次・学期</label>
-      <select id="targetTermSelect" style="max-width: 200px;">
-        <option value="1前">1年 前期</option>
-        <option value="1後">1年 後期</option>
-        <option value="2前">2年 前期</option>
-        <option value="2後">2年 後期</option>
-        <option value="3前">3年 前期</option>
-        <option value="3後">3年 後期</option>
-        <option value="4前">4年 前期</option>
-        <option value="4後">4年 後期</option>
-      </select>
+    <!-- STEP 1 -->
+    <div class="step-card">
+      <label class="step-badge" style="margin-bottom:6px; display:inline-block;">Step 1</label>
+      <label id="step1-title-label" style="font-size:0.95rem; color:var(--primary);">将来やってみたいこと・興味のある職業/分野</label>
+      
+      <span class="chip-label">💡 学科のヒントキーワード（ワンタップで入力）:</span>
+      <div class="hint-chip-container" id="step1-chips"></div>
+
+      <input type="text" id="step1-input" placeholder="例：映像制作に関わる仕事がしたい、IT分野に興味がある">
     </div>
 
-    <div class="form-group">
-      <label>1. 学業（成績・履修）の目標</label>
-      <input type="text" id="academicGoal" placeholder="例：実技科目でS評価を取る、GPA 3.0以上を維持する">
-    </div>
-    <div class="form-group">
-      <label>2. キャリア形成（資格・課外活動）の目標</label>
-      <input type="text" id="careerGoal" placeholder="例：ポートフォリオの初期版完成、検定合格">
-    </div>
-    <div class="form-group">
-      <label>3. 学外での活動（アルバイト・制作など）</label>
-      <input type="text" id="externalGoal" placeholder="例：自主制作映画の現場参加、接客アルバイト">
+    <!-- STEP 2 -->
+    <div class="step-card">
+      <label class="step-badge" style="margin-bottom:6px; display:inline-block;">Step 2</label>
+      <label id="step2-title-label" style="font-size:0.95rem; color:var(--primary);">なぜそう思うのか（理由・きっかけ・背景）</label>
+      
+      <span class="chip-label">💡 きっかけのヒント:</span>
+      <div class="hint-chip-container" id="step2-chips"></div>
+
+      <textarea id="step2-input" rows="2" placeholder="例：小さい頃から映画が好きで、人を感動させる表現に憧れているから"></textarea>
     </div>
 
-    <button class="btn" onclick="generatePlanAndRecommend()" style="width: 100%; margin-top: 10px;">
-      🔍 目標文章の生成 ＆ おすすめ推奨科目を検索
+    <!-- STEP 3 -->
+    <div class="step-card">
+      <label class="step-badge" style="margin-bottom:6px; display:inline-block;">Step 3</label>
+      <label style="font-size:0.95rem; color:var(--primary);">自分自身の強み・課題（DPと連動）</label>
+      
+      <div class="form-group" style="margin-top:8px;">
+        <label>さらに伸ばしたい能力 (最大3つ) <span style="font-weight:normal; font-size:0.75rem; color:#64748b;">[赤:上位1-3位, オレンジ:4-7位]</span></label>
+        <div id="dpStrengthsContainer" class="dp-grid"></div>
+      </div>
+      <div class="form-group">
+        <label>克服したい・補いたい能力 (最大3つ) <span style="font-weight:normal; font-size:0.75rem; color:#64748b;">[青:ワースト1-3位, 緑:4-7位]</span></label>
+        <div id="dpWeaknessesContainer" class="dp-grid"></div>
+      </div>
+    </div>
+
+    <!-- STEP 4 -->
+    <div class="step-card">
+      <label class="step-badge" style="margin-bottom:6px; display:inline-block;">Step 4</label>
+      <label style="font-size:0.95rem; color:var(--primary);">目標に向けた具体的な行動</label>
+
+      <div class="form-group" style="margin-top:8px;">
+        <label for="targetTermSelect">目標対象の年次・学期</label>
+        <select id="targetTermSelect" style="max-width: 180px;">
+          <option value="1前">1年 前期</option>
+          <option value="1後">1年 後期</option>
+          <option value="2前">2年 前期</option>
+          <option value="2後">2年 後期</option>
+          <option value="3前">3年 前期</option>
+          <option value="3後">3年 後期</option>
+          <option value="4前">4年 前期</option>
+          <option value="4後">4年 後期</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>① 正課内（授業・推奨科目）での取り組み</label>
+        <input type="text" id="step4-curriculum" placeholder="推奨科目の選択ボタンを押すか、直接入力できます">
+      </div>
+
+      <div class="form-group">
+        <label>② 正課外（資格・作品制作・部活・アルバイト等）での取り組み</label>
+        <input type="text" id="step4-external" placeholder="例：学園祭での映像制作に参加、検定試験の受検">
+      </div>
+
+      <div class="form-group" id="step4-criteria-group">
+        <label>③ 達成の目安（どんな状態になれば達成か）</label>
+        <input type="text" id="step4-criteria" placeholder="例：作品を1本完成させる、授業評価でAを取る">
+      </div>
+    </div>
+
+    <!-- 推奨科目セクション -->
+    <div style="background:#f8fafc; padding:12px; border-radius:8px; border:1px solid var(--border); margin-bottom:16px;">
+      <h3 style="margin:0 0 8px 0; font-size:0.95rem; color:var(--primary);">選択DPに基づくおすすめ提案科目</h3>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>操作</th>
+              <th>マッチ度</th>
+              <th>区分</th>
+              <th>科目名</th>
+              <th>配当年次</th>
+            </tr>
+          </thead>
+          <tbody id="recommendTableBody">
+            <tr><td colspan="5" style="text-align:center; color:#94a3b8;">選択DPを設定すると提案されます</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div id="moreRecommendContainer" style="text-align: center; margin-top: 8px; display: none;">
+        <button class="btn btn-secondary btn-sm" onclick="showMoreRecommendations()">▼ もっと見る (最大30位まで表示)</button>
+      </div>
+    </div>
+
+    <button class="btn" onclick="generatePlanAndSaveLog()">
+      ✨ 入力内容から文章を自動作成 ＆ ログ保存
     </button>
 
-    <!-- 履修提案エリア -->
-    <h3 style="margin-top: 25px; color: var(--primary);">選択DPに基づくおすすめ提案科目（未修得・履修可能年次）</h3>
-    <table>
-      <thead>
-        <tr>
-          <th>マッチ度</th>
-          <th>科目区分</th>
-          <th>授業科目の名称</th>
-          <th>配当年次</th>
-          <th>該当する選択DP</th>
-        </tr>
-      </thead>
-      <tbody id="recommendTableBody">
-        <tr><td colspan="5" style="text-align:center; color:#94a3b8;">条件を設定して上のボタンを押してください</td></tr>
-      </tbody>
-    </table>
-    
-    <div id="moreRecommendContainer" style="text-align: center; margin-top: 12px; display: none;">
-      <button class="btn btn-secondary" onclick="showMoreRecommendations()">▼ もっと見る (最大30位まで表示)</button>
-    </div>
-
-    <!-- テキスト出力エリア -->
-    <h3 style="margin-top:25px; color: var(--primary);">生成されたキャリアビジョン＆目標（編集・調整可能）</h3>
-    <textarea id="outputText" rows="14"></textarea>
-    <button class="btn" style="margin-top: 8px;" onclick="copyToClipboard()">📋 文章をクリップボードにコピー</button>
+    <!-- 結果文章出力 -->
+    <h3 style="margin-top:20px; font-size:0.95rem; color: var(--primary);">完成文章プレビュー（コピーしてシステムへ貼り付け）</h3>
+    <textarea id="outputText" rows="10" readonly></textarea>
+    <button class="btn btn-secondary" style="margin-top: 8px;" onclick="copyToClipboard()">📋 文章をクリップボードにコピー</button>
   </div>
 </div>
 
 <script>
   const COMMON_CSV_FILE = 'art_expression05.csv';
+  const GAS_LOG_URL = "https://script.google.com/macros/s/【ここに取得したWebアプリURLを貼り付け】/exec";
+
   let rawData = { header: [], rows: [] };
-  const userScores = {}; // 成績入力データ (科目名 -> 点数)
+  const userScores = {}; 
 
   let currentDPNames = [];
   let currentDPTotals = [];
   let currentDPMaxTotals = [];
   let radarChartInstance = null;
   let currentRecommendations = [];
+  let currentSubMode = 'career'; // 'career' or 'term'
 
-  // 点数に基づく重み倍率
+  // 学科別ヒントデータ（指針準拠）
+  const DEPARTMENT_HINTS = {
+    'art_expression01.csv': { // 情報表現
+      step1: ['映像クリエイター', 'Webエンジニア', 'ゲームプログラマー', '3DCGデザイナー', '音響・照明スタッフ', 'ITコンサルタント'],
+      step2: ['映画・アニメが好きだから', 'プログラミングで作品を作るのが楽しいから', '人に感動を与える映像を作りたいから', '最新のデジタル技術に興奮したから']
+    },
+    'art_expression02.csv': { // 芸術表現
+      step1: ['演奏家・ソロイスト', '音楽指導者', '舞台ディレクター', 'アートイベントプロデューサー', '音響エンジニア', '個人クリエイター'],
+      step2: ['自分の演奏で人の心を動かしたいから', '音楽と他ジャンルを融合した舞台を作りたいから', '表現技法を深く探求したいから']
+    },
+    'art_expression03.csv': { // 総合政策
+      step1: ['地方公務員', '地域起業・新事業開発', 'NPO・社会起業家', '民間企業の総合職', 'サステナビリティ推進員'],
+      step2: ['地域課題を解決したいから', 'ビジネスの仕組みで社会に貢献したいから', '法律や経済の知識を実務に活かしたいから']
+    },
+    'art_expression04.csv': { // スポーツマネジメント
+      step1: ['スポーツチーム運営スタッフ', 'スポーツイベントプロデューサー', 'スポーツアナリスト', '健康運動指導士', 'スポーツマーケター'],
+      step2: ['スポーツの力で地域を元気にしたいから', 'データ分析でチームの勝利に貢献したいから', '健康増進活動を広めたいから']
+    }
+  };
+
   function getScoreWeight(score) {
     if (score === undefined || score === '' || score === null) return 0;
     const num = Number(score);
@@ -572,7 +696,6 @@
     return 0;
   }
 
-  // CSVパース
   function parseCSV(text) {
     const lines = text.trim().split(/\r?\n/);
     if (lines.length === 0) return { header: [], rows: [] };
@@ -583,14 +706,9 @@
       let inQuotes = false;
       for (let i = 0; i < line.length; i++) {
         const char = line[i];
-        if (char === '"') {
-          inQuotes = !inQuotes;
-        } else if (char === ',' && !inQuotes) {
-          result.push(current.trim());
-          current = '';
-        } else {
-          current += char;
-        }
+        if (char === '"') inQuotes = !inQuotes;
+        else if (char === ',' && !inQuotes) { result.push(current.trim()); current = ''; }
+        else current += char;
       }
       result.push(current.trim());
       return result;
@@ -612,7 +730,6 @@
     return await response.text();
   }
 
-  // データ読み込み（学科ファイル + 共通教養ファイル）
   async function loadCurriculumData(deptCsvFile) {
     const errorDiv = document.getElementById('error-message');
     errorDiv.style.display = 'none';
@@ -639,14 +756,12 @@
         return alignedRow;
       });
 
-      rawData = {
-        header: header,
-        rows: [...deptParsed.rows, ...processedCommonRows]
-      };
+      rawData = { header: header, rows: [...deptParsed.rows, ...processedCommonRows] };
 
       updateCategoryCheckboxes();
       renderTable();
       renderDPCheckboxesInPlan();
+      updateStepHints();
     } catch (error) {
       errorDiv.textContent = error.message;
       errorDiv.style.display = 'block';
@@ -654,7 +769,6 @@
     }
   }
 
-  // 科目区分チェックボックス動的生成
   function updateCategoryCheckboxes() {
     const container = document.getElementById('category-checkboxes-container');
     container.innerHTML = '';
@@ -678,13 +792,13 @@
 
     const exceptKyoyoLabel = document.createElement('label');
     exceptKyoyoLabel.className = 'checkbox-label highlight';
-    exceptKyoyoLabel.innerHTML = `<input type="checkbox" id="cb-except-kyoyo" checked><span>【教養科目以外を選択】</span>`;
+    exceptKyoyoLabel.innerHTML = `<input type="checkbox" id="cb-except-kyoyo" checked><span>【学科専攻】</span>`;
     container.appendChild(exceptKyoyoLabel);
 
     if (hasKyoyo) {
       const kyoyoLabel = document.createElement('label');
       kyoyoLabel.className = 'checkbox-label highlight';
-      kyoyoLabel.innerHTML = `<input type="checkbox" class="cat-cb" value="教養科目" checked><span>【教養科目】</span>`;
+      kyoyoLabel.innerHTML = `<input type="checkbox" class="cat-cb" value="教養科目" checked><span>【教養】</span>`;
       container.appendChild(kyoyoLabel);
     }
 
@@ -703,16 +817,11 @@
 
     container.querySelectorAll('.cat-cb').forEach(cb => {
       cb.addEventListener('change', () => {
-        const deptCbs = Array.from(document.querySelectorAll('.dept-cat-cb'));
-        if (deptCbs.length > 0) {
-          document.getElementById('cb-except-kyoyo').checked = deptCbs.every(c => c.checked);
-        }
         renderTable();
       });
     });
   }
 
-  // テーブル描画＆DP集計
   function renderTable() {
     const yearFilter = document.getElementById('year-select').value;
     const searchFilter = document.getElementById('search-input').value.toLowerCase();
@@ -725,13 +834,9 @@
     const countDiv = document.getElementById('subject-count');
     const dpCardsContainer = document.getElementById('dp-cards-container');
 
-    tHead.innerHTML = '';
-    tBody.innerHTML = '';
-    dpCardsContainer.innerHTML = '';
-
+    tHead.innerHTML = ''; tBody.innerHTML = ''; dpCardsContainer.innerHTML = '';
     if (!rawData.header.length) return;
 
-    // 非表示対象の列判定
     const excludeColIndices = [];
     rawData.header.forEach((headerName, idx) => {
       if (headerName === '科目区分1' || headerName === '配当年次' || headerName.includes('DP')) {
@@ -744,7 +849,6 @@
     const yearIdx = rawData.header.indexOf('配当年次');
     let unitsIdx = rawData.header.indexOf('単位数');
     if (unitsIdx === -1) unitsIdx = rawData.header.indexOf('単位');
-
     let category2Idx = rawData.header.indexOf('科目区分2');
     if (category2Idx === -1) category2Idx = rawData.header.indexOf('科目区分');
 
@@ -753,14 +857,9 @@
       if (headerName.includes('DP')) dpColIndices.push(idx);
     });
 
-    const dpTotals = {};
-    const dpMaxTotals = {};
-    dpColIndices.forEach(idx => {
-      dpTotals[idx] = 0;
-      dpMaxTotals[idx] = 0;
-    });
+    const dpTotals = {}; const dpMaxTotals = {};
+    dpColIndices.forEach(idx => { dpTotals[idx] = 0; dpMaxTotals[idx] = 0; });
 
-    // 全科目における最大ポイント（分母）算出
     rawData.rows.forEach(row => {
       const category2 = category2Idx !== -1 ? row[category2Idx] : '';
       if (checkedCategories.has(category2)) {
@@ -775,25 +874,23 @@
       }
     });
 
-    // ヘッダー生成
     const trHead = document.createElement('tr');
     rawData.header.forEach((col, idx) => {
       if (excludeColIndices.includes(idx)) return;
       const th = document.createElement('th');
-      th.textContent = (col === '科目区分2') ? '科目区分' : col;
+      th.textContent = (col === '科目区分2') ? '区分' : col;
       if (idx === nameIdx) th.classList.add('col-subject');
       trHead.appendChild(th);
 
       if (idx === nameIdx) {
         const thScore = document.createElement('th');
-        thScore.textContent = '成績(点数)';
-        thScore.style.width = '80px';
+        thScore.textContent = '点数';
+        thScore.style.width = '65px';
         trHead.appendChild(thScore);
       }
     });
     tHead.appendChild(trHead);
 
-    // データ行生成
     let visibleCount = 0;
     rawData.rows.forEach(row => {
       const subjectName = nameIdx !== -1 ? row[nameIdx] : '';
@@ -813,7 +910,6 @@
 
         row.forEach((cell, idx) => {
           if (excludeColIndices.includes(idx)) return;
-
           const td = document.createElement('td');
           const cleanCell = cell ? cell.trim() : '';
           if (idx === nameIdx) td.classList.add('col-subject');
@@ -827,10 +923,7 @@
           if (idx === nameIdx) {
             const tdScore = document.createElement('td');
             const scoreInput = document.createElement('input');
-            scoreInput.type = 'number';
-            scoreInput.min = '0';
-            scoreInput.max = '100';
-            scoreInput.placeholder = '-';
+            scoreInput.type = 'number'; scoreInput.min = '0'; scoreInput.max = '100';
             scoreInput.className = 'score-input';
             if (userScoreVal !== undefined) {
               scoreInput.value = userScoreVal;
@@ -861,19 +954,17 @@
     });
 
     countDiv.textContent = `表示件数: ${visibleCount} 件`;
-
     currentDPNames = dpColIndices.map(idx => rawData.header[idx]);
     currentDPTotals = dpColIndices.map(idx => dpTotals[idx]);
     currentDPMaxTotals = dpColIndices.map(idx => dpMaxTotals[idx]);
 
-    // サマリーカード描画
     dpColIndices.forEach(idx => {
       const dpName = rawData.header[idx];
       const card = document.createElement('div');
       card.className = 'dp-card';
       card.innerHTML = `
         <span class="dp-name">${dpName}</span>
-        <span class="dp-val" id="card-dp-${idx}">${dpTotals[idx].toFixed(1)} <span style="font-size:0.7rem;">pt</span></span>
+        <span class="dp-val" id="card-dp-${idx}">${dpTotals[idx].toFixed(1)} <span style="font-size:0.65rem;">pt</span></span>
       `;
       dpCardsContainer.appendChild(card);
     });
@@ -882,7 +973,6 @@
     renderDPCheckboxesInPlan();
   }
 
-  // 点数変更時のリアルタイム再計算
   function recalculateDPs() {
     let nameIdx = rawData.header.indexOf('科目名称');
     if (nameIdx === -1) nameIdx = rawData.header.indexOf('授業科目の名称');
@@ -915,7 +1005,7 @@
 
     dpColIndices.forEach((idx, i) => {
       const cardValEl = document.getElementById(`card-dp-${idx}`);
-      if (cardValEl) cardValEl.innerHTML = `${dpTotals[idx].toFixed(1)} <span style="font-size:0.7rem;">pt</span>`;
+      if (cardValEl) cardValEl.innerHTML = `${dpTotals[idx].toFixed(1)} <span style="font-size:0.65rem;">pt</span>`;
       currentDPTotals[i] = dpTotals[idx];
     });
 
@@ -923,7 +1013,6 @@
     renderDPCheckboxesInPlan();
   }
 
-  // レーダーチャート描画（動的スケーリング機能付き）
   function renderRadarChart() {
     const ctx = document.getElementById('radarChartCanvas').getContext('2d');
     if (radarChartInstance) radarChartInstance.destroy();
@@ -940,7 +1029,6 @@
         return maxVal > 0 ? (val / maxVal) * 100 : 0;
       });
       labelUnit = '%';
-
       const maxRatio = Math.max(...chartData, 0);
       maxScale = (maxRatio === 0) ? 10 : Math.min(100, Math.ceil((maxRatio + 2) / 5) * 5);
     } else {
@@ -953,7 +1041,7 @@
       data: {
         labels: currentDPNames,
         datasets: [{
-          label: displayType === 'percent' ? `DP達成率 (%) [上限:${maxScale}%]` : '修得DP獲得ポイント (pt)',
+          label: displayType === 'percent' ? `DP達成率 (%)` : '修得DPポイント (pt)',
           data: chartData,
           backgroundColor: 'rgba(5, 150, 105, 0.25)',
           borderColor: 'rgba(5, 150, 105, 1)',
@@ -969,32 +1057,19 @@
           r: {
             beginAtZero: true,
             max: maxScale,
-            ticks: {
-              precision: (displayType === 'percent' ? 0 : 1),
-              callback: v => v + (displayType === 'percent' ? '%' : ''),
-              font: { size: 10 }
-            },
-            pointLabels: {
-              font: { size: 10, weight: 'bold' },
-              color: '#065f46'
-            }
+            ticks: { precision: (displayType === 'percent' ? 0 : 1), font: { size: 9 } },
+            pointLabels: { font: { size: 9, weight: 'bold' }, color: '#065f46' }
           }
         },
         plugins: {
-          legend: { position: 'top', labels: { font: { size: 11 } } },
-          tooltip: {
-            callbacks: {
-              label: c => `${c.dataset.label}: ${(c.raw || 0).toFixed(1)} ${labelUnit}`
-            }
-          }
+          legend: { position: 'top', labels: { font: { size: 10 } } }
         }
       }
     });
   }
 
-  // --- PLAN タブ用機能 ---
+  // --- PLAN タブ用機能（指針準拠 Step1〜4） ---
 
-  // DP順位計算ロジック
   function getDPRanks() {
     const dpList = currentDPNames.map((name, idx) => {
       const pts = currentDPTotals[idx] || 0;
@@ -1003,19 +1078,13 @@
       return { name, idx, pts, pct };
     });
 
-    // 合算ポイント順 (降順 - 高い順)
     const sortedByPts = [...dpList].sort((a, b) => b.pts - a.pts);
     const ptsRankMap = {};
-    sortedByPts.forEach((item, index) => {
-      ptsRankMap[item.name] = index + 1;
-    });
+    sortedByPts.forEach((item, index) => { ptsRankMap[item.name] = index + 1; });
 
-    // 達成割合順 (昇順 - 低い/ワースト順)
     const sortedByPct = [...dpList].sort((a, b) => a.pct - b.pct);
     const pctRankMap = {};
-    sortedByPct.forEach((item, index) => {
-      pctRankMap[item.name] = index + 1;
-    });
+    sortedByPct.forEach((item, index) => { pctRankMap[item.name] = index + 1; });
 
     return { ptsRankMap, pctRankMap };
   }
@@ -1025,13 +1094,10 @@
     const weakBox = document.getElementById('dpWeaknessesContainer');
     if (!strBox || !weakBox) return;
 
-    // 現在の選択状態を保持
     const prevStrChecked = Array.from(document.querySelectorAll('input[name="str_dp"]:checked')).map(cb => cb.value);
     const prevWeakChecked = Array.from(document.querySelectorAll('input[name="weak_dp"]:checked')).map(cb => cb.value);
 
-    strBox.innerHTML = '';
-    weakBox.innerHTML = '';
-
+    strBox.innerHTML = ''; weakBox.innerHTML = '';
     const { ptsRankMap, pctRankMap } = getDPRanks();
 
     currentDPNames.forEach((dpName, i) => {
@@ -1041,45 +1107,32 @@
       const max = currentDPMaxTotals[i] || 0;
       const pct = max > 0 ? ((pts / max) * 100).toFixed(1) : 0;
 
-      // 伸ばしたい能力（合算pt 上位1~3位:赤, 4~7位:オレンジ）
-      let strClass = '';
-      let strBadge = '';
+      let strClass = '', strBadge = '';
       if (ptsRank >= 1 && ptsRank <= 3) {
-        strClass = 'dp-rank-red';
-        strBadge = `<span class="dp-badge-rank badge-red">${ptsRank}位 (${pts.toFixed(1)}pt)</span>`;
+        strClass = 'dp-rank-red'; strBadge = `<span class="dp-badge-rank badge-red">${ptsRank}位 (${pts.toFixed(1)}pt)</span>`;
       } else if (ptsRank >= 4 && ptsRank <= 7) {
-        strClass = 'dp-rank-orange';
-        strBadge = `<span class="dp-badge-rank badge-orange">${ptsRank}位 (${pts.toFixed(1)}pt)</span>`;
+        strClass = 'dp-rank-orange'; strBadge = `<span class="dp-badge-rank badge-orange">${ptsRank}位 (${pts.toFixed(1)}pt)</span>`;
       } else {
-        strBadge = `<span style="font-size:0.75rem; color:#64748b; margin-left:auto;">${ptsRank}位 (${pts.toFixed(1)}pt)</span>`;
+        strBadge = `<span style="font-size:0.7rem; color:#64748b; margin-left:auto;">${ptsRank}位</span>`;
       }
 
-      // 克服したい能力（達成割合 ワースト1~3位:青, ワースト4~7位:緑）
-      let weakClass = '';
-      let weakBadge = '';
+      let weakClass = '', weakBadge = '';
       if (pctRank >= 1 && pctRank <= 3) {
-        weakClass = 'dp-rank-blue';
-        weakBadge = `<span class="dp-badge-rank badge-blue">ワースト${pctRank}位 (${pct}%)</span>`;
+        weakClass = 'dp-rank-blue'; weakBadge = `<span class="dp-badge-rank badge-blue">W${pctRank}位 (${pct}%)</span>`;
       } else if (pctRank >= 4 && pctRank <= 7) {
-        weakClass = 'dp-rank-green';
-        weakBadge = `<span class="dp-badge-rank badge-green">ワースト${pctRank}位 (${pct}%)</span>`;
+        weakClass = 'dp-rank-green'; weakBadge = `<span class="dp-badge-rank badge-green">W${pctRank}位 (${pct}%)</span>`;
       } else {
-        weakBadge = `<span style="font-size:0.75rem; color:#64748b; margin-left:auto;">ワースト${pctRank}位 (${pct}%)</span>`;
+        weakBadge = `<span style="font-size:0.7rem; color:#64748b; margin-left:auto;">W${pctRank}位</span>`;
       }
 
       strBox.appendChild(createDPCheckbox(dpName, 'str', strClass, strBadge));
       weakBox.appendChild(createDPCheckbox(dpName, 'weak', weakClass, weakBadge));
     });
 
-    // 選択状態を復元
-    prevStrChecked.forEach(val => {
-      const el = document.getElementById(`str_${val}`);
-      if (el) el.checked = true;
-    });
-    prevWeakChecked.forEach(val => {
-      const el = document.getElementById(`weak_${val}`);
-      if (el) el.checked = true;
-    });
+    prevStrChecked.forEach(val => { const el = document.getElementById(`str_${val}`); if (el) el.checked = true; });
+    prevWeakChecked.forEach(val => { const el = document.getElementById(`weak_${val}`); if (el) el.checked = true; });
+    
+    updateRecommendations();
   }
 
   function createDPCheckbox(dpName, prefix, customClass, badgeHtml) {
@@ -1101,10 +1154,63 @@
       alert("選択できる項目は最大3つまでです。");
       event.target.checked = false;
     }
+    updateRecommendations();
   }
 
-  // 目標作成＆科目提案ロジック
-  function generatePlanAndRecommend() {
+  // 学科別・モード別のヒントチップ設定
+  function updateStepHints() {
+    const deptSelect = document.getElementById('department-select').value;
+    const hints = DEPARTMENT_HINTS[deptSelect] || DEPARTMENT_HINTS['art_expression01.csv'];
+
+    const step1Container = document.getElementById('step1-chips');
+    const step2Container = document.getElementById('step2-chips');
+    step1Container.innerHTML = ''; step2Container.innerHTML = '';
+
+    hints.step1.forEach(text => {
+      const chip = document.createElement('span');
+      chip.className = 'chip'; chip.textContent = `+ ${text}`;
+      chip.onclick = () => appendToInput('step1-input', text);
+      step1Container.appendChild(chip);
+    });
+
+    hints.step2.forEach(text => {
+      const chip = document.createElement('span');
+      chip.className = 'chip'; chip.textContent = `+ ${text}`;
+      chip.onclick = () => appendToInput('step2-input', text);
+      step2Container.appendChild(chip);
+    });
+  }
+
+  function appendToInput(inputId, text) {
+    const input = document.getElementById(inputId);
+    if (input.value) input.value += `、${text}`;
+    else input.value = text;
+  }
+
+  // モード切替（キャリアビジョン vs 今学期の目標）
+  function switchSubMode(mode) {
+    currentSubMode = mode;
+    document.querySelectorAll('.sub-tab-btn').forEach(btn => btn.classList.remove('active'));
+    
+    const step1Label = document.getElementById('step1-title-label');
+    const step2Label = document.getElementById('step2-title-label');
+    const criteriaGroup = document.getElementById('step4-criteria-group');
+
+    if (mode === 'career') {
+      document.querySelectorAll('.sub-tab-btn')[0].classList.add('active');
+      step1Label.textContent = '卒業後になりたい職業・目指す業界・興味のある分野';
+      step2Label.textContent = 'なぜその職業・分野に興味を持っているのか（理由・背景）';
+      criteriaGroup.style.display = 'none';
+    } else {
+      document.querySelectorAll('.sub-tab-btn')[1].classList.add('active');
+      step1Label.textContent = '今学期の目標・頑張りたいこと（一言でOK）';
+      step2Label.textContent = 'なぜ今学期、その目標に取り組むのか';
+      criteriaGroup.style.display = 'block';
+    }
+  }
+
+  // 推奨科目マッチング演算
+  function updateRecommendations() {
     const strSelected = Array.from(document.querySelectorAll('input[name="str_dp"]:checked')).map(cb => cb.value);
     const weakSelected = Array.from(document.querySelectorAll('input[name="weak_dp"]:checked')).map(cb => cb.value);
     const targetTerm = document.getElementById('targetTermSelect').value;
@@ -1120,9 +1226,7 @@
       if (headerName.includes('DP')) dpColIndices.push(idx);
     });
 
-    // 成績で60点以上（修得済）科目を判定
     const passedSubjectNames = Object.keys(userScores).filter(name => Number(userScores[name]) >= 60);
-
     currentRecommendations = [];
 
     rawData.rows.forEach(row => {
@@ -1130,27 +1234,16 @@
       const academicYear = yearIdx !== -1 ? row[yearIdx] : '';
       const category2 = category2Idx !== -1 ? row[category2Idx] : '';
 
-      // 修得済み除外
       if (passedSubjectNames.includes(subjectName)) return;
-
-      // 配当年次チェック（簡略一致）
       if (!academicYear.includes(targetTerm.substring(0, 1)) && !academicYear.includes('全')) return;
 
       let score = 0;
-      let matchedDPs = [];
-
       dpColIndices.forEach(idx => {
         const dpName = rawData.header[idx];
         const cell = row[idx] ? row[idx].trim() : '';
-
         if (strSelected.includes(dpName) || weakSelected.includes(dpName)) {
-          if (cell.includes('◎')) {
-            score += 2;
-            matchedDPs.push(`${dpName}(◎)`);
-          } else if (cell.includes('○') || cell.includes('〇') || cell.includes('◯')) {
-            score += 1;
-            matchedDPs.push(`${dpName}(○)`);
-          }
+          if (cell.includes('◎')) score += 2;
+          else if (cell.includes('○') || cell.includes('〇') || cell.includes('◯')) score += 1;
         }
       });
 
@@ -1159,78 +1252,39 @@
           category: category2,
           name: subjectName,
           term: academicYear,
-          score: score,
-          matchedDPs: matchedDPs
+          score: score
         });
       }
     });
 
     currentRecommendations.sort((a, b) => b.score - a.score);
-
-    // 提案テーブル出力（初期10件）
     renderRecommendationsTable(10);
-
-    // 文章生成
-    const interest = document.getElementById('interest').value || '未入力';
-    const careerTarget = document.getElementById('careerTarget').value || '未入力';
-    const careerType = document.getElementById('careerType').value;
-    const strengthsText = document.getElementById('strengthsText').value || '日頃の着実な学び';
-    const academicGoal = document.getElementById('academicGoal').value || '確実な単位修得';
-    const careerGoal = document.getElementById('careerGoal').value || 'スキルアップ';
-    const externalGoal = document.getElementById('externalGoal').value || '視野の拡大';
-
-    const text = `【キャリアビジョン】
-１、今の自分の長所は何か（能力・経験・性格）
-${strengthsText}。選択したDP（${strSelected.join(', ') || '基本能力'}）の修得に強みを持つ。
-
-２、卒業時の姿（就職、進学など）
-${careerType}を目指す。${interest}分野の実践的技能と柔軟な思考力を有した状態で卒業する。
-
-３、将来希望する業種・職種
-${careerTarget}
-
-４、卒業までに身につけたい力
-長所である${strSelected.join('・') || '能力'}を伸ばしつつ、課題意識のある${weakSelected.join('・') || '能力'}を補い、総合的な学力を高める。
-
-【今学期の目標】
-１、学業（成績）
-${academicGoal}。推奨科目を中心に履修し、${weakSelected.join(', ') || '必要な能力'}の獲得に努める。
-
-２、キャリア形成（資格・語学試験・課外活動など）
-${careerGoal}。作品制作や実践的取り組みを通じてポートフォリオを充実させる。
-
-３、学外での活動（ボランティア・アルバイトなど）
-${externalGoal}。社会性や協調性を高める。`;
-
-    document.getElementById('outputText').value = text;
   }
 
-  // 提案科目のテーブル描画関数
   function renderRecommendationsTable(limit) {
     const recTbody = document.getElementById('recommendTableBody');
     const moreBtnContainer = document.getElementById('moreRecommendContainer');
     recTbody.innerHTML = '';
 
     if (currentRecommendations.length === 0) {
-      recTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#94a3b8;">条件を設定して上のボタンを押すか、適合する未修得の推奨科目が存在しません</td></tr>';
+      recTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#94a3b8;">選択DPに適合する推奨科目がありません</td></tr>';
       moreBtnContainer.style.display = 'none';
       return;
     }
 
     const itemsToDisplay = currentRecommendations.slice(0, limit);
-    itemsToDisplay.forEach((r, idx) => {
+    itemsToDisplay.forEach((r) => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
+        <td><button class="btn btn-secondary btn-sm" onclick="addSubjectToCurriculum('${r.name}')">+ 追加</button></td>
         <td><strong>${r.score} pt</strong></td>
         <td>${r.category}</td>
         <td><strong>${r.name}</strong></td>
         <td>${r.term}</td>
-        <td>${r.matchedDPs.join(', ')}</td>
       `;
       recTbody.appendChild(tr);
     });
 
-    // 「もっと見る」ボタンの表示制御
     if (currentRecommendations.length > limit && limit < 30) {
       moreBtnContainer.style.display = 'block';
     } else {
@@ -1238,11 +1292,100 @@ ${externalGoal}。社会性や協調性を高める。`;
     }
   }
 
-  function showMoreRecommendations() {
-    renderRecommendationsTable(30);
+  function showMoreRecommendations() { renderRecommendationsTable(30); }
+
+  function addSubjectToCurriculum(subjectName) {
+    const input = document.getElementById('step4-curriculum');
+    if (input.value) input.value += `、「${subjectName}」の履修`;
+    else input.value = `「${subjectName}」の履修`;
   }
 
-  // タブ切り替え
+  // 文章生成 ＆ GASへの非同期保存
+  async function generatePlanAndSaveLog() {
+    const step1 = document.getElementById('step1-input').value.trim() || '未入力';
+    const step2 = document.getElementById('step2-input').value.trim() || '未記入';
+    const strSelected = Array.from(document.querySelectorAll('input[name="str_dp"]:checked')).map(cb => cb.value);
+    const weakSelected = Array.from(document.querySelectorAll('input[name="weak_dp"]:checked')).map(cb => cb.value);
+    const step4Curriculum = document.getElementById('step4-curriculum').value.trim() || '授業の積極的履修';
+    const step4External = document.getElementById('step4-external').value.trim() || '自主的な学習・活動';
+    const step4Criteria = document.getElementById('step4-criteria').value.trim() || '評価A以上の修得';
+    const targetTerm = document.getElementById('targetTermSelect').value;
+
+    let maxStepReached = "Step 1";
+    if (step2 !== '未記入') maxStepReached = "Step 2";
+    if (strSelected.length > 0 || weakSelected.length > 0) maxStepReached = "Step 3";
+    if (step4Curriculum !== '授業の積極的履修' || step4External !== '自主的な学習・活動') maxStepReached = "Step 4";
+
+    let text = "";
+    if (currentSubMode === 'career') {
+      text = `【キャリアビジョン】
+（Step1）将来の目標・興味：
+${step1}
+
+（Step2）理由・背景：
+${step2}
+
+（Step3）強み・課題（DP）：
+伸ばしたい能力：${strSelected.join('・') || '特になし'}
+補いたい能力：${weakSelected.join('・') || '特になし'}
+
+（Step4）具体的な行動：
+[正課内] ${step4Curriculum}
+[正課外] ${step4External}`;
+    } else {
+      text = `【今学期の目標 (${targetTerm})】
+（Step1）今学期の目標：
+${step1}
+
+（Step2）取り組み理由：
+${step2}
+
+（Step3）必要な力・課題（DP）：
+伸ばしたい力：${strSelected.join('・') || '特になし'}
+補いたい力：${weakSelected.join('・') || '特になし'}
+
+（Step4）具体的な行動と達成目安：
+[正課内] ${step4Curriculum}
+[正課外] ${step4External}
+[達成の目安] ${step4Criteria}`;
+    }
+
+    document.getElementById('outputText').value = text;
+
+    // GASログ送信
+    const deptSelect = document.getElementById('department-select');
+    const deptName = deptSelect.options[deptSelect.selectedIndex].text;
+
+    const logPayload = {
+      department: deptName,
+      inputMode: currentSubMode === 'career' ? 'キャリアビジョン' : '学期目標',
+      targetTerm: targetTerm,
+      maxStep: maxStepReached,
+      step1: step1,
+      step2: step2,
+      strSelected: strSelected,
+      weakSelected: weakSelected,
+      step4Curriculum: step4Curriculum,
+      step4External: step4External,
+      step4Criteria: step4Criteria,
+      generatedText: text
+    };
+
+    if (GAS_LOG_URL && !GAS_LOG_URL.includes("【ここに")) {
+      try {
+        await fetch(GAS_LOG_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(logPayload)
+        });
+        console.log("ログの保存に成功しました");
+      } catch (err) {
+        console.warn("ログ保存エラー:", err);
+      }
+    }
+  }
+
   function switchTab(tabName) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -1264,7 +1407,6 @@ ${externalGoal}。社会性や協調性を高める。`;
     alert('文章をクリップボードにコピーしました！');
   }
 
-  // 初期化
   document.addEventListener('DOMContentLoaded', () => {
     const deptSelect = document.getElementById('department-select');
     const yearSelect = document.getElementById('year-select');
@@ -1272,66 +1414,18 @@ ${externalGoal}。社会性や協調性を高める。`;
 
     loadCurriculumData(deptSelect.value);
 
-    deptSelect.addEventListener('change', (e) => loadCurriculumData(e.target.value));
+    deptSelect.addEventListener('change', (e) => {
+      loadCurriculumData(e.target.value);
+    });
     yearSelect.addEventListener('change', renderTable);
     searchInput.addEventListener('input', renderTable);
+
+    document.getElementById('targetTermSelect').addEventListener('change', updateRecommendations);
 
     document.querySelectorAll('input[name="chartDisplayType"]').forEach(radio => {
       radio.addEventListener('change', renderRadarChart);
     });
   });
-
-  // GASのWebアプリURLを設定
-const GAS_LOG_URL = "https://script.google.com/macros/s/https://script.google.com/macros/s/AKfycbxhnAuLSDC9RNJVMchz43usXKjWeVHhRIlOvi3EdKZVIKStYaDGGx_61-4wWSkbBvfT/exec";
-
-// ログ送信関数
-async function sendAnalyticsLog(logData) {
-  if (!GAS_LOG_URL || GAS_LOG_URL.includes("【ここに")) return;
-
-  try {
-    // GitHub PagesからのCORS制約を回避するため mode: 'no-cors' を指定
-    await fetch(GAS_LOG_URL, {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(logData)
-    });
-    console.log("学習傾向ログを記録しました");
-  } catch (err) {
-    console.warn("ログ記録に失敗しました:", err);
-  }
-}
-
-// generatePlanAndRecommend 関数内の最下部にログ送信処理を組み込む
-function generatePlanAndRecommend() {
-  // --- (既存の計算処理・テキスト生成処理) ---
-
-  // 1. 提案科目の上位3件を抽出（分析用）
-  const topRecommendations = currentRecommendations
-    .slice(0, 10)
-    .map(r => `${r.name}(${r.category})`)
-    .join(' / ');
-
-  // 2. ログ用データの構造化
-  const deptSelect = document.getElementById('department-select');
-  const deptName = deptSelect.options[deptSelect.selectedIndex].text;
-
-  const logPayload = {
-    department: deptName,
-    targetTerm: document.getElementById('targetTermSelect').value,
-    interest: document.getElementById('interest').value,
-    careerTarget: document.getElementById('careerTarget').value,
-    careerType: document.getElementById('careerType').value,
-    strSelected: strSelected,
-    weakSelected: weakSelected,
-    topRecommendations: topRecommendations,
-    generatedText: text
-  };
-
-  // 3. バックグラウンドで非同期送信
-  sendAnalyticsLog(logPayload);
-}
-  
 </script>
 </body>
 </html>
