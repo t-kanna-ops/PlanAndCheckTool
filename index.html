@@ -155,7 +155,7 @@
       box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
     }
 
-    /* くっきり対比型のサブモードタブ */
+    /* サブモードタブ */
     .sub-mode-tabs {
       display: flex;
       background: #0f172a;
@@ -177,6 +177,10 @@
       cursor: pointer;
       text-align: center;
       transition: all 0.2s ease-in-out;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
     }
     .sub-tab-btn.active {
       background: #000000;
@@ -184,6 +188,14 @@
       border-color: #3b82f6;
       box-shadow: 0 2px 6px rgba(0,0,0,0.4);
     }
+    .status-badge {
+      font-size: 0.7rem;
+      padding: 2px 6px;
+      border-radius: 10px;
+      font-weight: normal;
+    }
+    .status-badge.complete { background: #059669; color: #fff; }
+    .status-badge.incomplete { background: #d97706; color: #fff; }
 
     /* ステップカード容器 */
     .step-card {
@@ -443,14 +455,16 @@
     .badge-blue { background-color: #3b82f6; }
     .badge-green { background-color: #10b981; }
 
-    #error-message {
+    #error-message, #validation-error-message {
       display: none;
-      padding: 8px;
+      padding: 10px;
       background-color: #fef2f2;
       color: #991b1b;
+      border: 1px solid #fca5a5;
       border-radius: 6px;
-      margin-bottom: 10px;
-      font-size: 0.8rem;
+      margin-bottom: 14px;
+      font-size: 0.85rem;
+      line-height: 1.5;
     }
   </style>
 </head>
@@ -512,7 +526,7 @@
     <div id="error-message"></div>
 
     <!-- 件数 ＆ 総修得単位数表示エリア -->
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 8px;">
+    <div style="display: flex; justify-content: space-between; align- items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 8px;">
       <span id="subject-count" style="font-weight: bold; font-size: 0.8rem; color: var(--primary);">表示件数: 0 件</span>
       <span id="total-credits-count" style="font-weight: bold; font-size: 0.85rem; color: #047857; background: #ecfdf5; padding: 4px 10px; border-radius: 6px; border: 1px solid #a7f3d0;">総修得単位数: 0 単位</span>
     </div>
@@ -553,15 +567,22 @@
   <!-- PLAN TAB -->
   <div id="tab-plan" class="tab-content">
 
-    <!-- サブモード切替（黒背景×白文字のハイコントラスト型） -->
+    <!-- サブモード切替 -->
     <div class="sub-mode-tabs" id="subModeTabsAnchor">
-      <button class="sub-tab-btn active" onclick="switchSubMode('career')">🚀 キャリアビジョン (長期)</button>
-      <button class="sub-tab-btn" onclick="switchSubMode('term')">⏱️ 今学期の目標 (短期)</button>
+      <button class="sub-tab-btn active" onclick="switchSubMode('career')">
+        🚀 キャリアビジョン (長期) <span id="badge-career" class="status-badge incomplete">未完了</span>
+      </button>
+      <button class="sub-tab-btn" onclick="switchSubMode('term')">
+        ⏱️ 今学期の目標 (短期) <span id="badge-term" class="status-badge incomplete">未完了</span>
+      </button>
     </div>
 
     <div class="notice" id="step-intro-notice">
-      💡 <b>考え始めることからスタート！</b> 最初からすべて埋める必要はありません。Step1の一言入力から始めてみましょう。
+      💡 <b>キャリアビジョンと今学期の目標の両方を入力してください。</b> 入力完了後に下のボタンを押すと高クオリティな文章が一括生成されます。
     </div>
+
+    <!-- バリデーションエラーメッセージ表示エリア -->
+    <div id="validation-error-message"></div>
 
     <!-- STEP 1 -->
     <div class="step-card">
@@ -620,18 +641,18 @@
       </div>
 
       <div class="form-group">
-        <label>① 正課内（授業・推奨科目）での取り組み</label>
+        <label id="step4-curriculum-label">① 正課内（授業・成績向上・推奨科目）での取り組み</label>
         <input type="text" id="step4-curriculum" placeholder="推奨科目の選択ボタンを押すか、直接入力できます">
       </div>
 
       <div class="form-group">
-        <label>② 正課外（資格・作品制作・部活・アルバイト等）での取り組み</label>
+        <label id="step4-external-label">② 正課外（資格・語学・作品制作・部活等）での取り組み</label>
         <input type="text" id="step4-external" placeholder="例：学園祭での映像制作に参加、検定試験の受検">
       </div>
 
       <div class="form-group" id="step4-criteria-group">
-        <label>③ 達成の目安（どんな状態になれば達成か）</label>
-        <input type="text" id="step4-criteria" placeholder="例：作品を1本完成させる、授業評価でAを取る">
+        <label>③ 学外での活動・達成の目安（ボランティア・アルバイト・目標基準）</label>
+        <input type="text" id="step4-criteria" placeholder="例：学外でのアルバイトを通して接客力を養う、課題作品を1本完成させる">
       </div>
 
       <!-- 相互誘導ネクストアクションボタン -->
@@ -673,12 +694,12 @@
 
     <!-- 自動文章作成ボタン -->
     <button class="btn" onclick="generatePlanAndSaveLog()">
-      ✨ 入力内容から文章を自動作成
+      ✨ 入力内容から文章を自動作成（両方の入力が必要）
     </button>
 
     <!-- 結果文章出力 -->
     <h3 style="margin-top:20px; font-size:0.95rem; color: var(--primary);">完成文章プレビュー（コピーしてシステムへ貼り付け）</h3>
-    <textarea id="outputText" rows="10" readonly></textarea>
+    <textarea id="outputText" rows="14" readonly placeholder="「キャリアビジョン」と「今学期の目標」の両方を入力後、「文章を自動作成」ボタンを押すとここに結果が表示されます。"></textarea>
     <button class="btn btn-secondary" style="margin-top: 8px;" onclick="copyToClipboard()">📋 文章をクリップボードにコピー</button>
   </div>
 </div>
@@ -697,9 +718,32 @@
   let currentRecommendations = [];
   let currentSubMode = 'career';
 
-  // 学科別・長期/短期別のヒントキーワード構造
+  // 入力データの独立保持管理オブジェクト
+  const planFormData = {
+    career: {
+      step1: '',
+      step2: '',
+      strSelected: [],
+      weakSelected: [],
+      step4Curriculum: '',
+      step4External: '',
+      step4Criteria: ''
+    },
+    term: {
+      step1: '',
+      step2: '',
+      strSelected: [],
+      weakSelected: [],
+      targetTerm: '1年前期',
+      step4Curriculum: '',
+      step4External: '',
+      step4Criteria: ''
+    }
+  };
+
+  // 学科別・長期/短期別のヒントキーワード構造（「ソリスト」表記修正）
   const DEPARTMENT_HINTS = {
-    'art_expression01.csv': { // 情報表現学科
+    'art_expression01.csv': {
       career: {
         step1: ['映像クリエイター', 'Webエンジニア', 'ゲームプログラマー', '3DCGデザイナー', '音響・照明スタッフ', 'ITコンサルタント'],
         step2: ['映画・アニメが好きだから', 'プログラミングで作品を作るのが楽しいから', '人に感動を与える映像を作りたいから', '最新のデジタル技術に興味があるから']
@@ -709,9 +753,9 @@
         step2: ['将来のクリエイターに向けた基礎を固めるため', '作品表現の幅を広げたいから', '実務で使える実践的な技術を身につけたいから']
       }
     },
-    'art_expression02.csv': { // 芸術表現学科
+    'art_expression02.csv': {
       career: {
-        step1: ['演奏家・ソロイスト', '音楽指導者', '舞台ディレクター', 'アートイベントプロデューサー', '作曲家・サウンドデザイナー'],
+        step1: ['演奏家・ソリスト', '音楽指導者', '舞台ディレクター', 'アートイベントプロデューサー', '作曲家・サウンドデザイナー'],
         step2: ['自分の演奏で人の心を動かしたいから', '音楽と他ジャンルを融合した舞台を作りたいから', '表現技法を深く探求したいから']
       },
       term: {
@@ -719,7 +763,7 @@
         step2: ['表現者としての表現力を高めるため', '自分らしい作品・音を創り出したいから', '現場で役立つ舞台表現技術を深めたいから']
       }
     },
-    'art_expression03.csv': { // 総合政策学科
+    'art_expression03.csv': {
       career: {
         step1: ['地方公務員', '地域起業・新事業開発', 'NPO・社会起業家', '民間企業の総合職', 'サステナビリティ推進員'],
         step2: ['地域課題を解決したいから', 'ビジネスの仕組みで社会に貢献したいから', '法律や経済の知識を実務に活かしたいから']
@@ -729,7 +773,7 @@
         step2: ['社会の仕組みと課題解決のプロセスを理解するため', '説得力のある論理的思考力を身につけたいから', '将来の地域貢献に必要な知識を得るため']
       }
     },
-    'art_expression04.csv': { // スポーツマネジメント学科
+    'art_expression04.csv': {
       career: {
         step1: ['スポーツチーム運営スタッフ', 'スポーツイベントプロデューサー', 'スポーツアナリスト', '健康運動指導士', 'スポーツマーケター'],
         step2: ['スポーツの力で地域を元気にしたいから', 'データ分析でチームの勝利に貢献したいから', '健康増進活動を広めたいから']
@@ -743,12 +787,8 @@
 
   function getDPDescription(dpFullHeader) {
     if (!dpFullHeader) return '';
-    if (dpFullHeader.includes('：')) {
-      return dpFullHeader.split('：')[1].trim();
-    }
-    if (dpFullHeader.includes(':')) {
-      return dpFullHeader.split(':')[1].trim();
-    }
+    if (dpFullHeader.includes('：')) return dpFullHeader.split('：')[1].trim();
+    if (dpFullHeader.includes(':')) return dpFullHeader.split(':')[1].trim();
     return dpFullHeader.trim();
   }
 
@@ -780,9 +820,7 @@
     });
 
     const creditsEl = document.getElementById('total-credits-count');
-    if (creditsEl) {
-      creditsEl.textContent = `総修得単位数: ${totalCredits} 単位`;
-    }
+    if (creditsEl) creditsEl.textContent = `総修得単位数: ${totalCredits} 単位`;
   }
 
   function parseCSV(text) {
@@ -905,9 +943,7 @@
     });
 
     container.querySelectorAll('.cat-cb').forEach(cb => {
-      cb.addEventListener('change', () => {
-        renderTable();
-      });
+      cb.addEventListener('change', () => { renderTable(); });
     });
   }
 
@@ -988,7 +1024,7 @@
       const credits = (unitsIdx !== -1 && row[unitsIdx]) ? (parseFloat(row[unitsIdx]) || 1) : 1;
 
       const matchCategory = checkedCategories.has(category2);
-      const matchYear = (yearFilter === 'all' || academicYear === yearFilter);
+      const matchYear = (yearFilter === 'all' || academicYear.includes(yearFilter));
       const matchSearch = (!searchFilter || subjectName.toLowerCase().includes(searchFilter));
 
       if (matchCategory && matchYear && matchSearch) {
@@ -1105,9 +1141,6 @@
     renderDPCheckboxesInPlan();
   }
 
-  /**
-   * レーダーチャート表示および強み・伸びしろの言語化メッセージ生成
-   */
   function renderRadarChart() {
     const ctx = document.getElementById('radarChartCanvas').getContext('2d');
     if (radarChartInstance) radarChartInstance.destroy();
@@ -1159,13 +1192,11 @@
       }
     });
 
-    // --- 強み・伸びしろの言語化処理 ---
     const messageEl = document.getElementById('dpAnalysisMessage');
     const deptSelect = document.getElementById('department-select');
     const deptName = deptSelect.options[deptSelect.selectedIndex].text;
 
     if (displayType === 'percent') {
-      // 達成割合(%)表示：達成率が低いDP上位3つをピックアップ（伸びしろ）
       const dpStats = currentDPNames.map((name, idx) => {
         const pts = currentDPTotals[idx] || 0;
         const max = currentDPMaxTotals[idx] || 0;
@@ -1180,7 +1211,6 @@
         messageEl.innerHTML = '';
       }
     } else {
-      // 合算pt表示：獲得ポイントが高い上位3つをピックアップ（強み）
       const dpStats = currentDPNames.map((name, idx) => {
         const pts = currentDPTotals[idx] || 0;
         return { name: getDPDescription(name), pts };
@@ -1219,9 +1249,6 @@
     const weakBox = document.getElementById('dpWeaknessesContainer');
     if (!strBox || !weakBox) return;
 
-    const prevStrChecked = Array.from(document.querySelectorAll('input[name="str_dp"]:checked')).map(cb => cb.value);
-    const prevWeakChecked = Array.from(document.querySelectorAll('input[name="weak_dp"]:checked')).map(cb => cb.value);
-
     strBox.innerHTML = ''; weakBox.innerHTML = '';
     const { ptsRankMap, pctRankMap } = getDPRanks();
 
@@ -1254,8 +1281,9 @@
       weakBox.appendChild(createDPCheckbox(dpName, 'weak', weakClass, weakBadge));
     });
 
-    prevStrChecked.forEach(val => { const el = document.getElementById(`str_${val}`); if (el) el.checked = true; });
-    prevWeakChecked.forEach(val => { const el = document.getElementById(`weak_${val}`); if (el) el.checked = true; });
+    const activeData = planFormData[currentSubMode];
+    (activeData.strSelected || []).forEach(val => { const el = document.getElementById(`str_${val}`); if (el) el.checked = true; });
+    (activeData.weakSelected || []).forEach(val => { const el = document.getElementById(`weak_${val}`); if (el) el.checked = true; });
     
     updateRecommendations();
   }
@@ -1265,7 +1293,7 @@
     div.className = `dp-item ${customClass}`;
     const descText = getDPDescription(dpName);
     div.innerHTML = `
-      <input type="checkbox" id="${prefix}_${dpName}" value="${dpName}" name="${prefix}_dp" onchange="limitChecks('${prefix}')">
+      <input type="checkbox" id="${prefix}_${dpName}" value="${dpName}" name="${prefix}_dp" onchange="onDPCheckboxChange('${prefix}')">
       <label for="${prefix}_${dpName}" style="display:flex; align-items:center; width:100%; cursor:pointer;">
         <strong>${descText}</strong>
         ${badgeHtml}
@@ -1274,16 +1302,17 @@
     return div;
   }
 
-  function limitChecks(prefix) {
+  function onDPCheckboxChange(prefix) {
     const checked = document.querySelectorAll(`input[name="${prefix}_dp"]:checked`);
     if (checked.length > 3) {
       alert("選択できる項目は最大3つまでです。");
       event.target.checked = false;
     }
+    saveCurrentSubModeForm();
     updateRecommendations();
+    checkSubModeCompletion();
   }
 
-  // 学科別・モード別のヒントチップ設定（構造化データ対応）
   function updateStepHints() {
     const deptSelect = document.getElementById('department-select').value;
     const deptHints = DEPARTMENT_HINTS[deptSelect] || DEPARTMENT_HINTS['art_expression01.csv'];
@@ -1296,14 +1325,14 @@
     hints.step1.forEach(text => {
       const chip = document.createElement('span');
       chip.className = 'chip'; chip.textContent = `+ ${text}`;
-      chip.onclick = () => appendToInput('step1-input', text);
+      chip.onclick = () => { appendToInput('step1-input', text); saveCurrentSubModeForm(); checkSubModeCompletion(); };
       step1Container.appendChild(chip);
     });
 
     hints.step2.forEach(text => {
       const chip = document.createElement('span');
       chip.className = 'chip'; chip.textContent = `+ ${text}`;
-      chip.onclick = () => appendToInput('step2-input', text);
+      chip.onclick = () => { appendToInput('step2-input', text); saveCurrentSubModeForm(); checkSubModeCompletion(); };
       step2Container.appendChild(chip);
     });
   }
@@ -1314,21 +1343,60 @@
     else input.value = text;
   }
 
-  // モード切替（キャリアビジョン vs 今学期の目標）およびネクストアクション誘導ボタンの制御
+  // フォーム入力値のデータ保存
+  function saveCurrentSubModeForm() {
+    const target = planFormData[currentSubMode];
+    target.step1 = document.getElementById('step1-input').value.trim();
+    target.step2 = document.getElementById('step2-input').value.trim();
+    target.strSelected = Array.from(document.querySelectorAll('input[name="str_dp"]:checked')).map(cb => cb.value);
+    target.weakSelected = Array.from(document.querySelectorAll('input[name="weak_dp"]:checked')).map(cb => cb.value);
+    target.targetTerm = document.getElementById('targetTermSelect').value;
+    target.step4Curriculum = document.getElementById('step4-curriculum').value.trim();
+    target.step4External = document.getElementById('step4-external').value.trim();
+    target.step4Criteria = document.getElementById('step4-criteria').value.trim();
+
+    checkSubModeCompletion();
+  }
+
+  // 入力状況バッジのリアルタイム更新
+  function checkSubModeCompletion() {
+    const isCareerComplete = planFormData.career.step1 && planFormData.career.step2 && (planFormData.career.step4Curriculum || planFormData.career.step4External);
+    const isTermComplete = planFormData.term.step1 && planFormData.term.step2 && planFormData.term.step4Curriculum;
+
+    const bCareer = document.getElementById('badge-career');
+    const bTerm = document.getElementById('badge-term');
+
+    if (bCareer) {
+      bCareer.textContent = isCareerComplete ? '🟢 入力完了' : '🟡 未入力あり';
+      bCareer.className = `status-badge ${isCareerComplete ? 'complete' : 'incomplete'}`;
+    }
+    if (bTerm) {
+      bTerm.textContent = isTermComplete ? '🟢 入力完了' : '🟡 未入力あり';
+      bTerm.className = `status-badge ${isTermComplete ? 'complete' : 'incomplete'}`;
+    }
+  }
+
+  // モード切替とフォームデータ復元
   function switchSubMode(mode) {
+    saveCurrentSubModeForm();
+
     currentSubMode = mode;
     document.querySelectorAll('.sub-tab-btn').forEach(btn => btn.classList.remove('active'));
     
     const step1Label = document.getElementById('step1-title-label');
     const step2Label = document.getElementById('step2-title-label');
+    const s4CurrLabel = document.getElementById('step4-curriculum-label');
+    const s4ExtLabel = document.getElementById('step4-external-label');
     const criteriaGroup = document.getElementById('step4-criteria-group');
     const navCareer = document.getElementById('submode-nav-career');
     const navTerm = document.getElementById('submode-nav-term');
 
     if (mode === 'career') {
       document.querySelectorAll('.sub-tab-btn')[0].classList.add('active');
-      step1Label.textContent = '卒業後になりたい職業・目指す業界・興味のある分野';
+      step1Label.textContent = '卒業後になりたい職業・目指す業界・希望職種';
       step2Label.textContent = 'なぜその職業・分野に興味を持っているのか（理由・背景）';
+      s4CurrLabel.textContent = '① 正課内（授業・専門学習）での取り組み';
+      s4ExtLabel.textContent = '② 正課外（資格・作品制作・課外活動等）での取り組み';
       criteriaGroup.style.display = 'none';
       navCareer.style.display = 'block';
       navTerm.style.display = 'none';
@@ -1336,24 +1404,35 @@
       document.querySelectorAll('.sub-tab-btn')[1].classList.add('active');
       step1Label.textContent = '今学期の目標・挑戦したい実践（撮影編集、音響実習、企画など）';
       step2Label.textContent = 'なぜ今学期、その目標に取り組むのか';
+      s4CurrLabel.textContent = '① 正課内（学業・履修科目・成績向上）での取り組み';
+      s4ExtLabel.textContent = '② 正課外（資格取得・語学試験・課外活動）での取り組み';
       criteriaGroup.style.display = 'block';
       navCareer.style.display = 'none';
       navTerm.style.display = 'block';
     }
 
+    // データの復元
+    const data = planFormData[mode];
+    document.getElementById('step1-input').value = data.step1 || '';
+    document.getElementById('step2-input').value = data.step2 || '';
+    document.getElementById('targetTermSelect').value = data.targetTerm || '1年前期';
+    document.getElementById('step4-curriculum').value = data.step4Curriculum || '';
+    document.getElementById('step4-external').value = data.step4External || '';
+    document.getElementById('step4-criteria').value = data.step4Criteria || '';
+
     updateStepHints();
+    renderDPCheckboxesInPlan();
   }
 
   function scrollToPlanTop() {
     const anchor = document.getElementById('subModeTabsAnchor');
-    if (anchor) {
-      anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    if (anchor) anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   function updateRecommendations() {
-    const strSelected = Array.from(document.querySelectorAll('input[name="str_dp"]:checked')).map(cb => cb.value);
-    const weakSelected = Array.from(document.querySelectorAll('input[name="weak_dp"]:checked')).map(cb => cb.value);
+    const activeData = planFormData[currentSubMode];
+    const strSelected = activeData.strSelected || [];
+    const weakSelected = activeData.weakSelected || [];
     const targetTerm = document.getElementById('targetTermSelect').value;
 
     let nameIdx = rawData.header.indexOf('科目名称');
@@ -1389,12 +1468,7 @@
       });
 
       if (score > 0) {
-        currentRecommendations.push({
-          category: category2,
-          name: subjectName,
-          term: academicYear,
-          score: score
-        });
+        currentRecommendations.push({ category: category2, name: subjectName, term: academicYear, score: score });
       }
     });
 
@@ -1439,6 +1513,7 @@
     const input = document.getElementById('step4-curriculum');
     if (input.value) input.value += `、「${subjectName}」の履修`;
     else input.value = `「${subjectName}」の履修`;
+    saveCurrentSubModeForm();
   }
 
   function formatReasonText(reason) {
@@ -1446,131 +1521,100 @@
     let cleaned = reason.trim();
     if (cleaned.endsWith('だから')) cleaned = cleaned.slice(0, -3);
     if (cleaned.endsWith('ため')) cleaned = cleaned.slice(0, -2);
-    if (cleaned.endsWith('です') || cleaned.endsWith('ます')) {
-      return cleaned;
-    }
     return cleaned;
   }
 
+  // 未入力バリデーションチェック ＆ 両目標の一括自動文章生成
   async function generatePlanAndSaveLog() {
-    const step1 = document.getElementById('step1-input').value.trim();
-    const step2 = document.getElementById('step2-input').value.trim();
-    const strSelected = Array.from(document.querySelectorAll('input[name="str_dp"]:checked')).map(cb => cb.value);
-    const weakSelected = Array.from(document.querySelectorAll('input[name="weak_dp"]:checked')).map(cb => cb.value);
-    const step4Curriculum = document.getElementById('step4-curriculum').value.trim();
-    const step4External = document.getElementById('step4-external').value.trim();
-    const step4Criteria = document.getElementById('step4-criteria').value.trim();
-    const targetTerm = document.getElementById('targetTermSelect').value;
+    saveCurrentSubModeForm();
 
-    const strDescs = strSelected.map(getDPDescription);
-    const weakDescs = weakSelected.map(getDPDescription);
+    const errDiv = document.getElementById('validation-error-message');
+    errDiv.style.display = 'none';
+    errDiv.innerHTML = '';
 
-    let maxStepReached = "Step 1";
-    if (step2) maxStepReached = "Step 2";
-    if (strSelected.length > 0 || weakSelected.length > 0) maxStepReached = "Step 3";
-    if (step4Curriculum || step4External) maxStepReached = "Step 4";
+    const errors = [];
+    const c = planFormData.career;
+    const t = planFormData.term;
 
-    let textParts = [];
+    if (!c.step1) errors.push('【キャリアビジョン】Step 1：将来希望する職業・分野が未入力です。');
+    if (!c.step2) errors.push('【キャリアビジョン】Step 2：希望する理由・背景が未入力です。');
+    if (!c.step4Curriculum && !c.step4External) errors.push('【キャリアビジョン】Step 4：正課内または正課外での具体的な行動が未入力です。');
 
-    if (currentSubMode === 'career') {
-      textParts.push(`【キャリアビジョン】`);
-      
-      let s1Text = step1 || '卒業後の進路目標を設定する';
-      if (!s1Text.endsWith('です') && !s1Text.endsWith('ます') && !s1Text.endsWith('たい')) {
-        s1Text = `私は将来、${s1Text}の仕事に就くことを目指しています。`;
-      } else {
-        s1Text = `私は将来、${s1Text}`;
-      }
-      
-      let s2Text = '';
-      if (step2) {
-        const cleanedReason = formatReasonText(step2);
-        if (cleanedReason.endsWith('です') || cleanedReason.endsWith('ます')) {
-          s2Text = `理由としては、${cleanedReason}`;
-        } else {
-          s2Text = `なぜなら、${cleanedReason}からです。`;
-        }
-      }
-      textParts.push(`${s1Text}${s2Text ? ' ' + s2Text : ''}`);
+    if (!t.step1) errors.push('【今学期の目標】Step 1：今学期の目標が未入力です。');
+    if (!t.step2) errors.push('【今学期の目標】Step 2：取り組む理由が未入力です。');
+    if (!t.step4Curriculum) errors.push('【今学期の目標】Step 4①：正課内（学業・成績）での取り組みが未入力です。');
 
-      let dpSentences = [];
-      if (strDescs.length > 0) {
-        dpSentences.push(`自身の強みである「${strDescs.join('」や「')}」をさらに伸ばす`);
-      }
-      if (weakDescs.length > 0) {
-        dpSentences.push(`「${weakDescs.join('」や「')}」の克服に取り組む`);
-      }
-      if (dpSentences.length > 0) {
-        textParts.push(`この目標に向けて、${dpSentences.join('とともに、')}ことが重要であると考えています。`);
-      }
-
-      let actionSentences = [];
-      if (step4Curriculum) actionSentences.push(`正課内では${step4Curriculum}に精一杯励み`);
-      if (step4External) actionSentences.push(`正課外では${step4External}に積極的に挑戦していきます`);
-
-      if (actionSentences.length > 0) {
-        textParts.push(`目標を実現するため、${actionSentences.join('、')}。`);
-      }
-
-    } else {
-      textParts.push(`【今学期の目標（${targetTerm}）】`);
-
-      let s1Text = step1 || '学びの基礎を固めること';
-      s1Text = `今学期は、${s1Text}に取り組むことを目指します。`;
-
-      let s2Text = '';
-      if (step2) {
-        const cleanedReason = formatReasonText(step2);
-        if (cleanedReason.endsWith('です') || cleanedReason.endsWith('ます')) {
-          s2Text = `これは、${cleanedReason}`;
-        } else {
-          s2Text = `これは、${cleanedReason}ためです。`;
-        }
-      }
-      textParts.push(`${s1Text}${s2Text ? ' ' + s2Text : ''}`);
-
-      let dpSentences = [];
-      if (strDescs.length > 0) {
-        dpSentences.push(`「${strDescs.join('」や「')}」という強みを活かしつつ`);
-      }
-      if (weakDescs.length > 0) {
-        dpSentences.push(`「${weakDescs.join('」や「')}」の能力向上・克服に努めます`);
-      }
-      if (dpSentences.length > 0) {
-        textParts.push(`目標達成に向け、${dpSentences.join('、')}。`);
-      }
-
-      let actionSentences = [];
-      if (step4Curriculum) actionSentences.push(`正課内において${step4Curriculum}に励み`);
-      if (step4External) actionSentences.push(`正課外では${step4External}に取り組みます`);
-
-      let actionText = actionSentences.length > 0 ? `具体的には、${actionSentences.join('、')}。` : '';
-      let criteriaText = step4Criteria ? `そして、${step4Criteria}を目標達成の目安とします。` : '';
-
-      if (actionText || criteriaText) {
-        textParts.push(`${actionText}${criteriaText ? ' ' + criteriaText : ''}`);
-      }
+    if (errors.length > 0) {
+      errDiv.innerHTML = `⚠️ <strong>文章を自動作成するには、以下の必須項目を入力してください：</strong><br>・` + errors.join('<br>・');
+      errDiv.style.display = 'block';
+      errDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
     }
 
-    const generatedText = textParts.join('\n\n');
-    document.getElementById('outputText').value = generatedText;
+    // --- 自動分析強みDPの取得 ---
+    const { ptsRankMap } = getDPRanks();
+    const sortedTopDPs = currentDPNames.map((name, idx) => ({
+      name: getDPDescription(name),
+      pts: currentDPTotals[idx] || 0
+    })).filter(d => d.pts > 0).sort((a, b) => b.pts - a.pts).slice(0, 2).map(d => d.name);
 
+    // --- 1. キャリアビジョン文章作成 ---
+    const cStrDescs = (c.strSelected || []).map(getDPDescription);
+    const cWeakDescs = (c.weakSelected || []).map(getDPDescription);
+
+    let cStrengthText = '';
+    const allStrengths = Array.from(new Set([...sortedTopDPs, ...cStrDescs]));
+    if (allStrengths.length > 0) {
+      cStrengthText = `私の強みは、DP分析に基づく「${allStrengths.join('」や「')}」です。これまでの学びを通じて自身の強みを磨き、主体的に課題へ取り組む姿勢を培ってきました。`;
+    } else {
+      cStrengthText = `私の強みは、自発的な行動力と継続的な学修意欲です。これまでの学びを通じて自身の資質を磨き、主体的に取り組む姿勢を培ってきました。`;
+    }
+
+    let cGradSentences = [];
+    if (cWeakDescs.length > 0) {
+      cGradSentences.push(`「${cWeakDescs.join('」や「')}」の能力克服に努めつつ`);
+    }
+    let cActions = [];
+    if (c.step4Curriculum) cActions.push(`正課内での${c.step4Curriculum}`);
+    if (c.step4External) cActions.push(`正課外での${c.step4External}`);
+    if (cActions.length > 0) {
+      cGradSentences.push(`${cActions.join('や')}に積極的に挑戦していきます`);
+    }
+    let cGradText = `卒業までに、${cGradSentences.join('、')}。学びと経験を積み重ねることで、専門知識と実践力を備えた理想的な姿で卒業し、社会で活躍できる人材を目指します。`;
+
+    let cReasonClean = formatReasonText(c.step2);
+    let cJobText = `卒業後は${c.step1}の分野で活躍することを希望しています。${cReasonClean}という強い思いがあるため、この目標の実現に向けて着実にステップアップしていきます。`;
+
+    const careerOutput = `【キャリアビジョン】\n\n1. 今の自分の長所（能力・経験・性格など）：\n${cStrengthText}\n\n2. 卒業時の姿（理想とする人物像・進路意欲）：\n${cGradText}\n\n3. 将来希望する業種・職種：\n${cJobText}`;
+
+    // --- 2. 今学期の目標文章作成 ---
+    const tStrDescs = (t.strSelected || []).map(getDPDescription);
+    const tWeakDescs = (t.weakSelected || []).map(getDPDescription);
+
+    let tAcadText = `今学期（${t.targetTerm}）は、${t.step1}の達成を目指します。そのために正課内において${t.step4Curriculum}に注力し、優れた評価を目指して学業成績の向上に努めます。`;
+
+    let tCareerAct = t.step4External || '資格取得や自主的な課題制作・課外活動';
+    let tCareerDP = tStrDescs.length > 0 ? `強みである「${tStrDescs.join('」や「')}」を高めながら、` : '';
+    let tCareerText = `正課外では、${tCareerDP}${tCareerAct}に積極的に取り組むことで専門的なスキルや知識の修得を図り、将来のキャリアに向けた実践力を養います。`;
+
+    let tExtAct = t.step4Criteria || t.step2 || '日々の目標管理と学習成果の定着';
+    let tExtDP = tWeakDescs.length > 0 ? `「${tWeakDescs.join('」や「')}」の克服を意識し、` : '';
+    let tExtText = `学内外での取り組みを通じて${tExtDP}「${tExtAct}」を達成基準として自律的に行動し、社会性や自己管理能力を高めていきます。`;
+
+    const termOutput = `【今学期の目標（${t.targetTerm}）】\n\n1. 学業（成績）：\n${tAcadText}\n\n2. キャリア形成（資格・語学試験・課外活動など）：\n${tCareerText}\n\n3. 学外での活動（ボランティア・アルバイト・自己管理）：\n${tExtText}`;
+
+    const fullGeneratedText = `${careerOutput}\n\n=========================================\n\n${termOutput}`;
+    document.getElementById('outputText').value = fullGeneratedText;
+
+    // --- GASへのログ送信 ---
     const deptSelect = document.getElementById('department-select');
     const deptName = deptSelect.options[deptSelect.selectedIndex].text;
 
     const logPayload = {
       department: deptName,
-      inputMode: currentSubMode === 'career' ? 'キャリアビジョン' : '学期目標',
-      targetTerm: targetTerm,
-      maxStep: maxStepReached,
-      step1: step1 || '未入力',
-      step2: step2 || '未記入',
-      strSelected: strSelected,
-      weakSelected: weakSelected,
-      step4Curriculum: step4Curriculum || '授業の積極的履修',
-      step4External: step4External || '自主的な学習・活動',
-      step4Criteria: step4Criteria || '特になし',
-      generatedText: generatedText
+      career: planFormData.career,
+      term: planFormData.term,
+      generatedText: fullGeneratedText
     };
 
     if (GAS_LOG_URL && !GAS_LOG_URL.includes("【ここに")) {
@@ -1604,9 +1648,13 @@
 
   function copyToClipboard() {
     const text = document.getElementById('outputText');
+    if (!text.value) {
+      alert('コピーする文章がまだ作成されていません。');
+      return;
+    }
     text.select();
     document.execCommand('copy');
-    alert('文章をクリップボードにコピーしました！');
+    alert('「キャリアビジョン」と「今学期の目標」をクリップボードにコピーしました！');
   }
 
   document.addEventListener('DOMContentLoaded', () => {
@@ -1622,7 +1670,19 @@
     yearSelect.addEventListener('change', renderTable);
     searchInput.addEventListener('input', renderTable);
 
-    document.getElementById('targetTermSelect').addEventListener('change', updateRecommendations);
+    document.getElementById('targetTermSelect').addEventListener('change', () => {
+      saveCurrentSubModeForm();
+      updateRecommendations();
+    });
+
+    ['step1-input', 'step2-input', 'step4-curriculum', 'step4-external', 'step4-criteria'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('input', () => {
+          saveCurrentSubModeForm();
+        });
+      }
+    });
 
     document.querySelectorAll('input[name="chartDisplayType"]').forEach(radio => {
       radio.addEventListener('change', renderRadarChart);
