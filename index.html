@@ -1280,6 +1280,58 @@ ${externalGoal}。社会性や協調性を高める。`;
       radio.addEventListener('change', renderRadarChart);
     });
   });
+
+  // GASのWebアプリURLを設定
+const GAS_LOG_URL = "https://script.google.com/macros/s/https://script.google.com/macros/s/AKfycbxhnAuLSDC9RNJVMchz43usXKjWeVHhRIlOvi3EdKZVIKStYaDGGx_61-4wWSkbBvfT/exec";
+
+// ログ送信関数
+async function sendAnalyticsLog(logData) {
+  if (!GAS_LOG_URL || GAS_LOG_URL.includes("【ここに")) return;
+
+  try {
+    // GitHub PagesからのCORS制約を回避するため mode: 'no-cors' を指定
+    await fetch(GAS_LOG_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(logData)
+    });
+    console.log("学習傾向ログを記録しました");
+  } catch (err) {
+    console.warn("ログ記録に失敗しました:", err);
+  }
+}
+
+// generatePlanAndRecommend 関数内の最下部にログ送信処理を組み込む
+function generatePlanAndRecommend() {
+  // --- (既存の計算処理・テキスト生成処理) ---
+
+  // 1. 提案科目の上位3件を抽出（分析用）
+  const topRecommendations = currentRecommendations
+    .slice(0, 10)
+    .map(r => `${r.name}(${r.category})`)
+    .join(' / ');
+
+  // 2. ログ用データの構造化
+  const deptSelect = document.getElementById('department-select');
+  const deptName = deptSelect.options[deptSelect.selectedIndex].text;
+
+  const logPayload = {
+    department: deptName,
+    targetTerm: document.getElementById('targetTermSelect').value,
+    interest: document.getElementById('interest').value,
+    careerTarget: document.getElementById('careerTarget').value,
+    careerType: document.getElementById('careerType').value,
+    strSelected: strSelected,
+    weakSelected: weakSelected,
+    topRecommendations: topRecommendations,
+    generatedText: text
+  };
+
+  // 3. バックグラウンドで非同期送信
+  sendAnalyticsLog(logPayload);
+}
+  
 </script>
 </body>
 </html>
