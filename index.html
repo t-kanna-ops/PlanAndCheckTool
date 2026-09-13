@@ -155,32 +155,34 @@
       box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
     }
 
-    /* スマホ対応サブモードタブ（キャリアビジョン vs 今学期の目標） */
+    /* くっきり対比型のサブモードタブ（黒背景×白文字ベース） */
     .sub-mode-tabs {
       display: flex;
-      background: #e2e8f0;
-      padding: 4px;
-      border-radius: 8px;
+      background: #0f172a; /* ダークネイビー・ブラック */
+      padding: 6px;
+      border-radius: 10px;
       margin-bottom: 16px;
-      gap: 4px;
+      gap: 6px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.15);
     }
     .sub-tab-btn {
       flex: 1;
-      padding: 10px 4px;
-      border: none;
-      background: transparent;
+      padding: 12px 6px;
+      border: 2px solid transparent;
+      background: #334155; /* 非アクティブはスレートグレー */
       border-radius: 6px;
-      font-size: 0.85rem;
+      font-size: 0.88rem;
       font-weight: bold;
-      color: #475569;
+      color: #cbd5e1; /* 淡いグレー文字 */
       cursor: pointer;
       text-align: center;
-      transition: all 0.2s;
+      transition: all 0.2s ease-in-out;
     }
     .sub-tab-btn.active {
-      background: #ffffff;
-      color: var(--primary);
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      background: #000000; /* アクティブは純黒 */
+      color: #ffffff; /* パキッとした白文字 */
+      border-color: #3b82f6; /* 青のアクセントフレーム */
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
     }
 
     /* ステップカード容器 */
@@ -461,10 +463,10 @@
       <label for="year-select">配当年次フィルタ</label>
       <select id="year-select">
         <option value="all">すべて表示</option>
-        <option value="１">1年次</option>
-        <option value="２">2年次</option>
-        <option value="３">3年次</option>
-        <option value="４">4年次</option>
+        <option value="1">1年次</option>
+        <option value="2">2年次</option>
+        <option value="3">3年次</option>
+        <option value="4">4年次</option>
       </select>
     </div>
   </div>
@@ -492,13 +494,15 @@
 
     <h2><span class="step-badge">Step 2</span> 履修修得（点数）入力</h2>
     <div class="notice">
-      💡 修得点数（60〜100点）を入力してください。点数に応じた倍率（90点以上:1.0 / 80点台:0.9 / 70点台:0.8 / 60点台:0.7）でDPが算出されます。
+      💡 修得点数（60〜100点）を入力してください。
     </div>
 
     <div id="error-message"></div>
 
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+    <!-- 件数 ＆ 総修得単位数表示エリア -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 8px;">
       <span id="subject-count" style="font-weight: bold; font-size: 0.8rem; color: var(--primary);">表示件数: 0 件</span>
+      <span id="total-credits-count" style="font-weight: bold; font-size: 0.85rem; color: #047857; background: #ecfdf5; padding: 4px 10px; border-radius: 6px; border: 1px solid #a7f3d0;">総修得単位数: 0 単位</span>
     </div>
 
     <div class="table-wrapper">
@@ -534,7 +538,7 @@
   <!-- PLAN TAB -->
   <div id="tab-plan" class="tab-content">
 
-    <!-- サブモード切替（指針のキャリアビジョンと学期目標） -->
+    <!-- サブモード切替（黒背景×白文字のハイコントラスト型） -->
     <div class="sub-mode-tabs">
       <button class="sub-tab-btn active" onclick="switchSubMode('career')">🚀 キャリアビジョン (長期)</button>
       <button class="sub-tab-btn" onclick="switchSubMode('term')">⏱️ 今学期の目標 (短期)</button>
@@ -640,8 +644,9 @@
       </div>
     </div>
 
+    <!-- 文言改修済みボタン -->
     <button class="btn" onclick="generatePlanAndSaveLog()">
-      ✨ 入力内容から文章を自動作成 ＆ ログ保存
+      ✨ 入力内容から文章を自動作成
     </button>
 
     <!-- 結果文章出力 -->
@@ -663,23 +668,22 @@
   let currentDPMaxTotals = [];
   let radarChartInstance = null;
   let currentRecommendations = [];
-  let currentSubMode = 'career'; // 'career' or 'term'
+  let currentSubMode = 'career';
 
-  // 学科別ヒントデータ（指針準拠）
   const DEPARTMENT_HINTS = {
-    'art_expression01.csv': { // 情報表現
+    'art_expression01.csv': {
       step1: ['映像クリエイター', 'Webエンジニア', 'ゲームプログラマー', '3DCGデザイナー', '音響・照明スタッフ', 'ITコンサルタント'],
       step2: ['映画・アニメが好きだから', 'プログラミングで作品を作るのが楽しいから', '人に感動を与える映像を作りたいから', '最新のデジタル技術に興奮したから']
     },
-    'art_expression02.csv': { // 芸術表現
+    'art_expression02.csv': {
       step1: ['演奏家・ソロイスト', '音楽指導者', '舞台ディレクター', 'アートイベントプロデューサー', '音響エンジニア', '個人クリエイター'],
       step2: ['自分の演奏で人の心を動かしたいから', '音楽と他ジャンルを融合した舞台を作りたいから', '表現技法を深く探求したいから']
     },
-    'art_expression03.csv': { // 総合政策
+    'art_expression03.csv': {
       step1: ['地方公務員', '地域起業・新事業開発', 'NPO・社会起業家', '民間企業の総合職', 'サステナビリティ推進員'],
       step2: ['地域課題を解決したいから', 'ビジネスの仕組みで社会に貢献したいから', '法律や経済の知識を実務に活かしたいから']
     },
-    'art_expression04.csv': { // スポーツマネジメント
+    'art_expression04.csv': {
       step1: ['スポーツチーム運営スタッフ', 'スポーツイベントプロデューサー', 'スポーツアナリスト', '健康運動指導士', 'スポーツマーケター'],
       step2: ['スポーツの力で地域を元気にしたいから', 'データ分析でチームの勝利に貢献したいから', '健康増進活動を広めたいから']
     }
@@ -694,6 +698,29 @@
     if (num >= 70) return 0.8;
     if (num >= 60) return 0.7;
     return 0;
+  }
+
+  // 総修得単位数の合算計算関数
+  function calculateTotalEarnedCredits() {
+    let nameIdx = rawData.header.indexOf('科目名称');
+    if (nameIdx === -1) nameIdx = rawData.header.indexOf('授業科目の名称');
+    let unitsIdx = rawData.header.indexOf('単位数');
+    if (unitsIdx === -1) unitsIdx = rawData.header.indexOf('単位');
+
+    let totalCredits = 0;
+    rawData.rows.forEach(row => {
+      const subjectName = nameIdx !== -1 ? row[nameIdx] : '';
+      const credits = (unitsIdx !== -1 && row[unitsIdx]) ? (parseFloat(row[unitsIdx]) || 0) : 0;
+      const scoreVal = userScores[subjectName];
+      if (getScoreWeight(scoreVal) > 0) {
+        totalCredits += credits;
+      }
+    });
+
+    const creditsEl = document.getElementById('total-credits-count');
+    if (creditsEl) {
+      creditsEl.textContent = `総修得単位数: ${totalCredits} 単位`;
+    }
   }
 
   function parseCSV(text) {
@@ -954,6 +981,8 @@
     });
 
     countDiv.textContent = `表示件数: ${visibleCount} 件`;
+    calculateTotalEarnedCredits(); // 単位数合計更新
+
     currentDPNames = dpColIndices.map(idx => rawData.header[idx]);
     currentDPTotals = dpColIndices.map(idx => dpTotals[idx]);
     currentDPMaxTotals = dpColIndices.map(idx => dpMaxTotals[idx]);
@@ -1009,6 +1038,7 @@
       currentDPTotals[i] = dpTotals[idx];
     });
 
+    calculateTotalEarnedCredits(); // 単位数合計更新
     renderRadarChart();
     renderDPCheckboxesInPlan();
   }
@@ -1067,8 +1097,6 @@
       }
     });
   }
-
-  // --- PLAN タブ用機能（指針準拠 Step1〜4） ---
 
   function getDPRanks() {
     const dpList = currentDPNames.map((name, idx) => {
@@ -1157,7 +1185,6 @@
     updateRecommendations();
   }
 
-  // 学科別・モード別のヒントチップ設定
   function updateStepHints() {
     const deptSelect = document.getElementById('department-select').value;
     const hints = DEPARTMENT_HINTS[deptSelect] || DEPARTMENT_HINTS['art_expression01.csv'];
@@ -1187,7 +1214,6 @@
     else input.value = text;
   }
 
-  // モード切替（キャリアビジョン vs 今学期の目標）
   function switchSubMode(mode) {
     currentSubMode = mode;
     document.querySelectorAll('.sub-tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -1209,7 +1235,6 @@
     }
   }
 
-  // 推奨科目マッチング演算
   function updateRecommendations() {
     const strSelected = Array.from(document.querySelectorAll('input[name="str_dp"]:checked')).map(cb => cb.value);
     const weakSelected = Array.from(document.querySelectorAll('input[name="weak_dp"]:checked')).map(cb => cb.value);
@@ -1300,7 +1325,6 @@
     else input.value = `「${subjectName}」の履修`;
   }
 
-  // 文章生成 ＆ GASへの非同期保存
   async function generatePlanAndSaveLog() {
     const step1 = document.getElementById('step1-input').value.trim() || '未入力';
     const step2 = document.getElementById('step2-input').value.trim() || '未記入';
@@ -1352,7 +1376,6 @@ ${step2}
 
     document.getElementById('outputText').value = text;
 
-    // GASログ送信
     const deptSelect = document.getElementById('department-select');
     const deptName = deptSelect.options[deptSelect.selectedIndex].text;
 
