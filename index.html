@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>学修ポートフォリオ ＆ キャリアプランナー</title>
+  <title>学修PDCAサポートアプリ</title>
   <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
@@ -155,7 +155,7 @@
       box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
     }
 
-    /* くっきり対比型のサブモードタブ（黒背景×白文字ベース） */
+    /* くっきり対比型のサブモードタブ */
     .sub-mode-tabs {
       display: flex;
       background: #0f172a;
@@ -342,6 +342,18 @@
     .dp-name { font-weight: bold; color: #065f46; text-align: center; }
     .dp-val { font-weight: bold; color: #059669; font-size: 0.9rem; }
 
+    /* 分析言語化メッセージエリア */
+    .dp-analysis-box {
+      margin-top: 12px;
+      padding: 12px 14px;
+      background: #f0fdf4;
+      border: 1.5px solid #86efac;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      color: #166534;
+      line-height: 1.5;
+    }
+
     /* チャートエリア */
     .chart-box {
       max-width: 450px;
@@ -445,7 +457,7 @@
 <body>
 
 <div class="container">
-  <h1>学修ポートフォリオ ＆ キャリアプランナー</h1>
+  <h1>学修PDCAサポートアプリ</h1>
 
   <!-- 全体共通 学科・年次設定 -->
   <div class="controls-grid">
@@ -529,6 +541,9 @@
       </label>
     </div>
 
+    <!-- 自動言語化メッセージエリア -->
+    <div id="dpAnalysisMessage" class="dp-analysis-box"></div>
+
     <div class="chart-box">
       <canvas id="radarChartCanvas"></canvas>
     </div>
@@ -539,7 +554,7 @@
   <div id="tab-plan" class="tab-content">
 
     <!-- サブモード切替（黒背景×白文字のハイコントラスト型） -->
-    <div class="sub-mode-tabs">
+    <div class="sub-mode-tabs" id="subModeTabsAnchor">
       <button class="sub-tab-btn active" onclick="switchSubMode('career')">🚀 キャリアビジョン (長期)</button>
       <button class="sub-tab-btn" onclick="switchSubMode('term')">⏱️ 今学期の目標 (短期)</button>
     </div>
@@ -618,6 +633,18 @@
         <label>③ 達成の目安（どんな状態になれば達成か）</label>
         <input type="text" id="step4-criteria" placeholder="例：作品を1本完成させる、授業評価でAを取る">
       </div>
+
+      <!-- 相互誘導ネクストアクションボタン -->
+      <div id="submode-nav-career" style="margin-top: 14px; text-align: center;">
+        <button type="button" class="btn btn-secondary" style="background:#0f172a; color:#fff;" onclick="switchSubMode('term'); scrollToPlanTop();">
+          ⏱️ 次に「今学期の目標」を入力する ➔
+        </button>
+      </div>
+      <div id="submode-nav-term" style="margin-top: 14px; text-align: center; display: none;">
+        <button type="button" class="btn btn-secondary" style="background:#0f172a; color:#fff;" onclick="switchSubMode('career'); scrollToPlanTop();">
+          🚀 「キャリアビジョン」を入力する ➔
+        </button>
+      </div>
     </div>
 
     <!-- 推奨科目セクション -->
@@ -658,7 +685,6 @@
 
 <script>
   const COMMON_CSV_FILE = 'art_expression05.csv';
-  // ★ デプロイしたご自身のGAS WebアプリURLを設定してください
   const GAS_LOG_URL = "https://script.google.com/macros/s/AKfycbxhnAuLSDC9RNJVMchz43usXKjWeVHhRIlOvi3EdKZVIKStYaDGGx_61-4wWSkbBvfT/exec";
 
   let rawData = { header: [], rows: [] };
@@ -671,29 +697,50 @@
   let currentRecommendations = [];
   let currentSubMode = 'career';
 
+  // 学科別・長期/短期別のヒントキーワード構造
   const DEPARTMENT_HINTS = {
-    'art_expression01.csv': {
-      step1: ['映像クリエイター', 'Webエンジニア', 'ゲームプログラマー', '3DCGデザイナー', '音響・照明スタッフ', 'ITコンサルタント'],
-      step2: ['映画・アニメが好きだから', 'プログラミングで作品を作るのが楽しいから', '人に感動を与える映像を作りたいから', '最新のデジタル技術に興奮したから']
+    'art_expression01.csv': { // 情報表現学科
+      career: {
+        step1: ['映像クリエイター', 'Webエンジニア', 'ゲームプログラマー', '3DCGデザイナー', '音響・照明スタッフ', 'ITコンサルタント'],
+        step2: ['映画・アニメが好きだから', 'プログラミングで作品を作るのが楽しいから', '人に感動を与える映像を作りたいから', '最新のデジタル技術に興味があるから']
+      },
+      term: {
+        step1: ['撮影・編集技術の修得', 'プログラミング演習の実践', '3Dモデリングの作品制作', '音響機器の操作トレーニング', 'Webアプリの開発'],
+        step2: ['将来のクリエイターに向けた基礎を固めるため', '作品表現の幅を広げたいから', '実務で使える実践的な技術を身につけたいから']
+      }
     },
-    'art_expression02.csv': {
-      step1: ['演奏家・ソロイスト', '音楽指導者', '舞台ディレクター', 'アートイベントプロデューサー', '音響エンジニア', '個人クリエイター'],
-      step2: ['自分の演奏で人の心を動かしたいから', '音楽と他ジャンルを融合した舞台を作りたいから', '表現技法を深く探求したいから']
+    'art_expression02.csv': { // 芸術表現学科
+      career: {
+        step1: ['演奏家・ソロイスト', '音楽指導者', '舞台ディレクター', 'アートイベントプロデューサー', '作曲家・サウンドデザイナー'],
+        step2: ['自分の演奏で人の心を動かしたいから', '音楽と他ジャンルを融合した舞台を作りたいから', '表現技法を深く探求したいから']
+      },
+      term: {
+        step1: ['ソロ演奏技法の探求', '作曲・編曲演習の実施', '音響エンジニアリングの実習', 'アンサンブル・舞台表現の練習', '演奏会・創作活動の企画'],
+        step2: ['表現者としての表現力を高めるため', '自分らしい作品・音を創り出したいから', '現場で役立つ舞台表現技術を深めたいから']
+      }
     },
-    'art_expression03.csv': {
-      step1: ['地方公務員', '地域起業・新事業開発', 'NPO・社会起業家', '民間企業の総合職', 'サステナビリティ推進員'],
-      step2: ['地域課題を解決したいから', 'ビジネスの仕組みで社会に貢献したいから', '法律や経済の知識を実務に活かしたいから']
+    'art_expression03.csv': { // 総合政策学科
+      career: {
+        step1: ['地方公務員', '地域起業・新事業開発', 'NPO・社会起業家', '民間企業の総合職', 'サステナビリティ推進員'],
+        step2: ['地域課題を解決したいから', 'ビジネスの仕組みで社会に貢献したいから', '法律や経済の知識を実務に活かしたいから']
+      },
+      term: {
+        step1: ['地域課題フィールドワークへの参加', '政策提言書の作成演習', 'ビジネスプランの立案', '法学・行政学の基礎修得', 'データ分析手法の学習'],
+        step2: ['社会の仕組みと課題解決のプロセスを理解するため', '説得力のある論理的思考力を身につけたいから', '将来の地域貢献に必要な知識を得るため']
+      }
     },
-    'art_expression04.csv': {
-      step1: ['スポーツチーム運営スタッフ', 'スポーツイベントプロデューサー', 'スポーツアナリスト', '健康運動指導士', 'スポーツマーケター'],
-      step2: ['スポーツの力で地域を元気にしたいから', 'データ分析でチームの勝利に貢献したいから', '健康増進活動を広めたいから']
+    'art_expression04.csv': { // スポーツマネジメント学科
+      career: {
+        step1: ['スポーツチーム運営スタッフ', 'スポーツイベントプロデューサー', 'スポーツアナリスト', '健康運動指導士', 'スポーツマーケター'],
+        step2: ['スポーツの力で地域を元気にしたいから', 'データ分析でチームの勝利に貢献したいから', '健康増進活動を広めたいから']
+      },
+      term: {
+        step1: ['スポーツイベントの企画・運営実習', 'スポーツデータ解析の実践', 'トレーニング・運動指導の実習', 'スポーツビジネス事例の分析', '地域スポーツクラブの調査'],
+        step2: ['現場で通用する実践的なマネジメント力を培うため', 'スポーツを通じた地域活性化の手法を学ぶため', '指導・分析の専門能力を高めたいから']
+      }
     }
   };
 
-  /**
-   * DPヘッダー文字列（例: "DP1-1：本質を見抜く力（審美眼）" や "DP1-1"）から
-   * 文章に埋め込むための自然な日本語テキスト（例: "本質を見抜く力（審美眼）"）を抽出する
-   */
   function getDPDescription(dpFullHeader) {
     if (!dpFullHeader) return '';
     if (dpFullHeader.includes('：')) {
@@ -1058,6 +1105,9 @@
     renderDPCheckboxesInPlan();
   }
 
+  /**
+   * レーダーチャート表示および強み・伸びしろの言語化メッセージ生成
+   */
   function renderRadarChart() {
     const ctx = document.getElementById('radarChartCanvas').getContext('2d');
     if (radarChartInstance) radarChartInstance.destroy();
@@ -1065,7 +1115,6 @@
     const displayType = document.querySelector('input[name="chartDisplayType"]:checked')?.value || 'pt';
 
     let chartData = [];
-    let labelUnit = 'pt';
     let maxScale = undefined;
 
     if (displayType === 'percent') {
@@ -1073,12 +1122,10 @@
         const maxVal = currentDPMaxTotals[idx] || 0;
         return maxVal > 0 ? (val / maxVal) * 100 : 0;
       });
-      labelUnit = '%';
       const maxRatio = Math.max(...chartData, 0);
       maxScale = (maxRatio === 0) ? 10 : Math.min(100, Math.ceil((maxRatio + 2) / 5) * 5);
     } else {
       chartData = currentDPTotals;
-      labelUnit = 'pt';
     }
 
     radarChartInstance = new Chart(ctx, {
@@ -1111,6 +1158,41 @@
         }
       }
     });
+
+    // --- 強み・伸びしろの言語化処理 ---
+    const messageEl = document.getElementById('dpAnalysisMessage');
+    const deptSelect = document.getElementById('department-select');
+    const deptName = deptSelect.options[deptSelect.selectedIndex].text;
+
+    if (displayType === 'percent') {
+      // 達成割合(%)表示：達成率が低いDP上位3つをピックアップ（伸びしろ）
+      const dpStats = currentDPNames.map((name, idx) => {
+        const pts = currentDPTotals[idx] || 0;
+        const max = currentDPMaxTotals[idx] || 0;
+        const pct = max > 0 ? (pts / max) * 100 : 0;
+        return { name: getDPDescription(name), pct };
+      }).sort((a, b) => a.pct - b.pct);
+
+      const lowDPs = dpStats.slice(0, 3).map(d => `「${d.name}」`);
+      if (lowDPs.length > 0) {
+        messageEl.innerHTML = `💡 <strong>能力の伸びしろ分析：</strong><br>あなたは<strong>${deptName}</strong>で${lowDPs.join('や')}などの能力を伸ばせる余地が多くあります。`;
+      } else {
+        messageEl.innerHTML = '';
+      }
+    } else {
+      // 合算pt表示：獲得ポイントが高い上位3つをピックアップ（強み）
+      const dpStats = currentDPNames.map((name, idx) => {
+        const pts = currentDPTotals[idx] || 0;
+        return { name: getDPDescription(name), pts };
+      }).filter(d => d.pts > 0).sort((a, b) => b.pts - a.pts);
+
+      const topDPs = dpStats.slice(0, 3).map(d => `「${d.name}」`);
+      if (topDPs.length > 0) {
+        messageEl.innerHTML = `✨ <strong>強み分析：</strong><br>あなたの強みは${topDPs.join('、')}です。`;
+      } else {
+        messageEl.innerHTML = `💡 <strong>分析メッセージ：</strong><br>修得した科目の点数を入力すると、あなたの「強み」がここに自動で言語化されます。`;
+      }
+    }
   }
 
   function getDPRanks() {
@@ -1201,9 +1283,11 @@
     updateRecommendations();
   }
 
+  // 学科別・モード別のヒントチップ設定（構造化データ対応）
   function updateStepHints() {
     const deptSelect = document.getElementById('department-select').value;
-    const hints = DEPARTMENT_HINTS[deptSelect] || DEPARTMENT_HINTS['art_expression01.csv'];
+    const deptHints = DEPARTMENT_HINTS[deptSelect] || DEPARTMENT_HINTS['art_expression01.csv'];
+    const hints = deptHints[currentSubMode] || deptHints['career'];
 
     const step1Container = document.getElementById('step1-chips');
     const step2Container = document.getElementById('step2-chips');
@@ -1230,6 +1314,7 @@
     else input.value = text;
   }
 
+  // モード切替（キャリアビジョン vs 今学期の目標）およびネクストアクション誘導ボタンの制御
   function switchSubMode(mode) {
     currentSubMode = mode;
     document.querySelectorAll('.sub-tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -1237,17 +1322,32 @@
     const step1Label = document.getElementById('step1-title-label');
     const step2Label = document.getElementById('step2-title-label');
     const criteriaGroup = document.getElementById('step4-criteria-group');
+    const navCareer = document.getElementById('submode-nav-career');
+    const navTerm = document.getElementById('submode-nav-term');
 
     if (mode === 'career') {
       document.querySelectorAll('.sub-tab-btn')[0].classList.add('active');
       step1Label.textContent = '卒業後になりたい職業・目指す業界・興味のある分野';
       step2Label.textContent = 'なぜその職業・分野に興味を持っているのか（理由・背景）';
       criteriaGroup.style.display = 'none';
+      navCareer.style.display = 'block';
+      navTerm.style.display = 'none';
     } else {
       document.querySelectorAll('.sub-tab-btn')[1].classList.add('active');
-      step1Label.textContent = '今学期の目標・頑張りたいこと（一言でOK）';
+      step1Label.textContent = '今学期の目標・挑戦したい実践（撮影編集、音響実習、企画など）';
       step2Label.textContent = 'なぜ今学期、その目標に取り組むのか';
       criteriaGroup.style.display = 'block';
+      navCareer.style.display = 'none';
+      navTerm.style.display = 'block';
+    }
+
+    updateStepHints();
+  }
+
+  function scrollToPlanTop() {
+    const anchor = document.getElementById('subModeTabsAnchor');
+    if (anchor) {
+      anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }
 
@@ -1341,9 +1441,6 @@
     else input.value = `「${subjectName}」の履修`;
   }
 
-  /**
-   * 自然な日本語表現にするための理由フレーズ補正関数
-   */
   function formatReasonText(reason) {
     if (!reason || reason === '未記入') return '';
     let cleaned = reason.trim();
@@ -1355,9 +1452,6 @@
     return cleaned;
   }
 
-  /**
-   * 高品質な「です・ます調」文章の自動生成およびログ保存処理
-   */
   async function generatePlanAndSaveLog() {
     const step1 = document.getElementById('step1-input').value.trim();
     const step2 = document.getElementById('step2-input').value.trim();
@@ -1368,7 +1462,6 @@
     const step4Criteria = document.getElementById('step4-criteria').value.trim();
     const targetTerm = document.getElementById('targetTermSelect').value;
 
-    // 選択されたDP名から「DP1-1：」などを除外した日本語フレーズを作成
     const strDescs = strSelected.map(getDPDescription);
     const weakDescs = weakSelected.map(getDPDescription);
 
@@ -1382,7 +1475,6 @@
     if (currentSubMode === 'career') {
       textParts.push(`【キャリアビジョン】`);
       
-      // Step 1: 目標
       let s1Text = step1 || '卒業後の進路目標を設定する';
       if (!s1Text.endsWith('です') && !s1Text.endsWith('ます') && !s1Text.endsWith('たい')) {
         s1Text = `私は将来、${s1Text}の仕事に就くことを目指しています。`;
@@ -1390,7 +1482,6 @@
         s1Text = `私は将来、${s1Text}`;
       }
       
-      // Step 2: 理由
       let s2Text = '';
       if (step2) {
         const cleanedReason = formatReasonText(step2);
@@ -1402,7 +1493,6 @@
       }
       textParts.push(`${s1Text}${s2Text ? ' ' + s2Text : ''}`);
 
-      // Step 3: DP（強み・課題）
       let dpSentences = [];
       if (strDescs.length > 0) {
         dpSentences.push(`自身の強みである「${strDescs.join('」や「')}」をさらに伸ばす`);
@@ -1414,7 +1504,6 @@
         textParts.push(`この目標に向けて、${dpSentences.join('とともに、')}ことが重要であると考えています。`);
       }
 
-      // Step 4: 具体的な行動
       let actionSentences = [];
       if (step4Curriculum) actionSentences.push(`正課内では${step4Curriculum}に精一杯励み`);
       if (step4External) actionSentences.push(`正課外では${step4External}に積極的に挑戦していきます`);
@@ -1424,14 +1513,11 @@
       }
 
     } else {
-      // 今学期の目標
       textParts.push(`【今学期の目標（${targetTerm}）】`);
 
-      // Step 1: 目標
       let s1Text = step1 || '学びの基礎を固めること';
       s1Text = `今学期は、${s1Text}に取り組むことを目指します。`;
 
-      // Step 2: 理由
       let s2Text = '';
       if (step2) {
         const cleanedReason = formatReasonText(step2);
@@ -1443,7 +1529,6 @@
       }
       textParts.push(`${s1Text}${s2Text ? ' ' + s2Text : ''}`);
 
-      // Step 3: DP（強み・課題）
       let dpSentences = [];
       if (strDescs.length > 0) {
         dpSentences.push(`「${strDescs.join('」や「')}」という強みを活かしつつ`);
@@ -1455,7 +1540,6 @@
         textParts.push(`目標達成に向け、${dpSentences.join('、')}。`);
       }
 
-      // Step 4: 具体的な行動と達成目安
       let actionSentences = [];
       if (step4Curriculum) actionSentences.push(`正課内において${step4Curriculum}に励み`);
       if (step4External) actionSentences.push(`正課外では${step4External}に取り組みます`);
@@ -1471,7 +1555,6 @@
     const generatedText = textParts.join('\n\n');
     document.getElementById('outputText').value = generatedText;
 
-    // GASへログ送信
     const deptSelect = document.getElementById('department-select');
     const deptName = deptSelect.options[deptSelect.selectedIndex].text;
 
