@@ -158,7 +158,7 @@
     /* くっきり対比型のサブモードタブ（黒背景×白文字ベース） */
     .sub-mode-tabs {
       display: flex;
-      background: #0f172a; /* ダークネイビー・ブラック */
+      background: #0f172a;
       padding: 6px;
       border-radius: 10px;
       margin-bottom: 16px;
@@ -169,19 +169,19 @@
       flex: 1;
       padding: 12px 6px;
       border: 2px solid transparent;
-      background: #334155; /* 非アクティブはスレートグレー */
+      background: #334155;
       border-radius: 6px;
       font-size: 0.88rem;
       font-weight: bold;
-      color: #cbd5e1; /* 淡いグレー文字 */
+      color: #cbd5e1;
       cursor: pointer;
       text-align: center;
       transition: all 0.2s ease-in-out;
     }
     .sub-tab-btn.active {
-      background: #000000; /* アクティブは純黒 */
-      color: #ffffff; /* パキッとした白文字 */
-      border-color: #3b82f6; /* 青のアクセントフレーム */
+      background: #000000;
+      color: #ffffff;
+      border-color: #3b82f6;
       box-shadow: 0 2px 6px rgba(0,0,0,0.4);
     }
 
@@ -463,10 +463,10 @@
       <label for="year-select">配当年次フィルタ</label>
       <select id="year-select">
         <option value="all">すべて表示</option>
-        <option value="1">1年次</option>
-        <option value="2">2年次</option>
-        <option value="3">3年次</option>
-        <option value="4">4年次</option>
+        <option value="１">1年次</option>
+        <option value="２">2年次</option>
+        <option value="３">3年次</option>
+        <option value="４">4年次</option>
       </select>
     </div>
   </div>
@@ -593,14 +593,14 @@
       <div class="form-group" style="margin-top:8px;">
         <label for="targetTermSelect">目標対象の年次・学期</label>
         <select id="targetTermSelect" style="max-width: 180px;">
-          <option value="1前">1年 前期</option>
-          <option value="1後">1年 後期</option>
-          <option value="2前">2年 前期</option>
-          <option value="2後">2年 後期</option>
-          <option value="3前">3年 前期</option>
-          <option value="3後">3年 後期</option>
-          <option value="4前">4年 前期</option>
-          <option value="4後">4年 後期</option>
+          <option value="1年前期">1年 前期</option>
+          <option value="1年後期">1年 後期</option>
+          <option value="2年前期">2年 前期</option>
+          <option value="2年後期">2年 後期</option>
+          <option value="3年前期">3年 前期</option>
+          <option value="3年後期">3年 後期</option>
+          <option value="4年前期">4年 前期</option>
+          <option value="4年後期">4年 後期</option>
         </select>
       </div>
 
@@ -644,7 +644,7 @@
       </div>
     </div>
 
-    <!-- 文言改修済みボタン -->
+    <!-- 自動文章作成ボタン -->
     <button class="btn" onclick="generatePlanAndSaveLog()">
       ✨ 入力内容から文章を自動作成
     </button>
@@ -658,6 +658,7 @@
 
 <script>
   const COMMON_CSV_FILE = 'art_expression05.csv';
+  // ★ デプロイしたご自身のGAS WebアプリURLを設定してください
   const GAS_LOG_URL = "https://script.google.com/macros/s/AKfycbxhnAuLSDC9RNJVMchz43usXKjWeVHhRIlOvi3EdKZVIKStYaDGGx_61-4wWSkbBvfT/exec";
 
   let rawData = { header: [], rows: [] };
@@ -689,6 +690,21 @@
     }
   };
 
+  /**
+   * DPヘッダー文字列（例: "DP1-1：本質を見抜く力（審美眼）" や "DP1-1"）から
+   * 文章に埋め込むための自然な日本語テキスト（例: "本質を見抜く力（審美眼）"）を抽出する
+   */
+  function getDPDescription(dpFullHeader) {
+    if (!dpFullHeader) return '';
+    if (dpFullHeader.includes('：')) {
+      return dpFullHeader.split('：')[1].trim();
+    }
+    if (dpFullHeader.includes(':')) {
+      return dpFullHeader.split(':')[1].trim();
+    }
+    return dpFullHeader.trim();
+  }
+
   function getScoreWeight(score) {
     if (score === undefined || score === '' || score === null) return 0;
     const num = Number(score);
@@ -700,7 +716,6 @@
     return 0;
   }
 
-  // 総修得単位数の合算計算関数
   function calculateTotalEarnedCredits() {
     let nameIdx = rawData.header.indexOf('科目名称');
     if (nameIdx === -1) nameIdx = rawData.header.indexOf('授業科目の名称');
@@ -981,7 +996,7 @@
     });
 
     countDiv.textContent = `表示件数: ${visibleCount} 件`;
-    calculateTotalEarnedCredits(); // 単位数合計更新
+    calculateTotalEarnedCredits();
 
     currentDPNames = dpColIndices.map(idx => rawData.header[idx]);
     currentDPTotals = dpColIndices.map(idx => dpTotals[idx]);
@@ -1038,7 +1053,7 @@
       currentDPTotals[i] = dpTotals[idx];
     });
 
-    calculateTotalEarnedCredits(); // 単位数合計更新
+    calculateTotalEarnedCredits();
     renderRadarChart();
     renderDPCheckboxesInPlan();
   }
@@ -1166,10 +1181,11 @@
   function createDPCheckbox(dpName, prefix, customClass, badgeHtml) {
     const div = document.createElement('div');
     div.className = `dp-item ${customClass}`;
+    const descText = getDPDescription(dpName);
     div.innerHTML = `
       <input type="checkbox" id="${prefix}_${dpName}" value="${dpName}" name="${prefix}_dp" onchange="limitChecks('${prefix}')">
       <label for="${prefix}_${dpName}" style="display:flex; align-items:center; width:100%; cursor:pointer;">
-        <strong>${dpName}</strong>
+        <strong>${descText}</strong>
         ${badgeHtml}
       </label>
     `;
@@ -1325,57 +1341,137 @@
     else input.value = `「${subjectName}」の履修`;
   }
 
+  /**
+   * 自然な日本語表現にするための理由フレーズ補正関数
+   */
+  function formatReasonText(reason) {
+    if (!reason || reason === '未記入') return '';
+    let cleaned = reason.trim();
+    if (cleaned.endsWith('だから')) cleaned = cleaned.slice(0, -3);
+    if (cleaned.endsWith('ため')) cleaned = cleaned.slice(0, -2);
+    if (cleaned.endsWith('です') || cleaned.endsWith('ます')) {
+      return cleaned;
+    }
+    return cleaned;
+  }
+
+  /**
+   * 高品質な「です・ます調」文章の自動生成およびログ保存処理
+   */
   async function generatePlanAndSaveLog() {
-    const step1 = document.getElementById('step1-input').value.trim() || '未入力';
-    const step2 = document.getElementById('step2-input').value.trim() || '未記入';
+    const step1 = document.getElementById('step1-input').value.trim();
+    const step2 = document.getElementById('step2-input').value.trim();
     const strSelected = Array.from(document.querySelectorAll('input[name="str_dp"]:checked')).map(cb => cb.value);
     const weakSelected = Array.from(document.querySelectorAll('input[name="weak_dp"]:checked')).map(cb => cb.value);
-    const step4Curriculum = document.getElementById('step4-curriculum').value.trim() || '授業の積極的履修';
-    const step4External = document.getElementById('step4-external').value.trim() || '自主的な学習・活動';
-    const step4Criteria = document.getElementById('step4-criteria').value.trim() || '評価A以上の修得';
+    const step4Curriculum = document.getElementById('step4-curriculum').value.trim();
+    const step4External = document.getElementById('step4-external').value.trim();
+    const step4Criteria = document.getElementById('step4-criteria').value.trim();
     const targetTerm = document.getElementById('targetTermSelect').value;
 
+    // 選択されたDP名から「DP1-1：」などを除外した日本語フレーズを作成
+    const strDescs = strSelected.map(getDPDescription);
+    const weakDescs = weakSelected.map(getDPDescription);
+
     let maxStepReached = "Step 1";
-    if (step2 !== '未記入') maxStepReached = "Step 2";
+    if (step2) maxStepReached = "Step 2";
     if (strSelected.length > 0 || weakSelected.length > 0) maxStepReached = "Step 3";
-    if (step4Curriculum !== '授業の積極的履修' || step4External !== '自主的な学習・活動') maxStepReached = "Step 4";
+    if (step4Curriculum || step4External) maxStepReached = "Step 4";
 
-    let text = "";
+    let textParts = [];
+
     if (currentSubMode === 'career') {
-      text = `【キャリアビジョン】
-（Step1）将来の目標・興味：
-${step1}
+      textParts.push(`【キャリアビジョン】`);
+      
+      // Step 1: 目標
+      let s1Text = step1 || '卒業後の進路目標を設定する';
+      if (!s1Text.endsWith('です') && !s1Text.endsWith('ます') && !s1Text.endsWith('たい')) {
+        s1Text = `私は将来、${s1Text}の仕事に就くことを目指しています。`;
+      } else {
+        s1Text = `私は将来、${s1Text}`;
+      }
+      
+      // Step 2: 理由
+      let s2Text = '';
+      if (step2) {
+        const cleanedReason = formatReasonText(step2);
+        if (cleanedReason.endsWith('です') || cleanedReason.endsWith('ます')) {
+          s2Text = `理由としては、${cleanedReason}`;
+        } else {
+          s2Text = `なぜなら、${cleanedReason}からです。`;
+        }
+      }
+      textParts.push(`${s1Text}${s2Text ? ' ' + s2Text : ''}`);
 
-（Step2）理由・背景：
-${step2}
+      // Step 3: DP（強み・課題）
+      let dpSentences = [];
+      if (strDescs.length > 0) {
+        dpSentences.push(`自身の強みである「${strDescs.join('」や「')}」をさらに伸ばす`);
+      }
+      if (weakDescs.length > 0) {
+        dpSentences.push(`「${weakDescs.join('」や「')}」の克服に取り組む`);
+      }
+      if (dpSentences.length > 0) {
+        textParts.push(`この目標に向けて、${dpSentences.join('とともに、')}ことが重要であると考えています。`);
+      }
 
-（Step3）強み・課題（DP）：
-伸ばしたい能力：${strSelected.join('・') || '特になし'}
-補いたい能力：${weakSelected.join('・') || '特になし'}
+      // Step 4: 具体的な行動
+      let actionSentences = [];
+      if (step4Curriculum) actionSentences.push(`正課内では${step4Curriculum}に精一杯励み`);
+      if (step4External) actionSentences.push(`正課外では${step4External}に積極的に挑戦していきます`);
 
-（Step4）具体的な行動：
-[正課内] ${step4Curriculum}
-[正課外] ${step4External}`;
+      if (actionSentences.length > 0) {
+        textParts.push(`目標を実現するため、${actionSentences.join('、')}。`);
+      }
+
     } else {
-      text = `【今学期の目標 (${targetTerm})】
-（Step1）今学期の目標：
-${step1}
+      // 今学期の目標
+      textParts.push(`【今学期の目標（${targetTerm}）】`);
 
-（Step2）取り組み理由：
-${step2}
+      // Step 1: 目標
+      let s1Text = step1 || '学びの基礎を固めること';
+      s1Text = `今学期は、${s1Text}に取り組むことを目指します。`;
 
-（Step3）必要な力・課題（DP）：
-伸ばしたい力：${strSelected.join('・') || '特になし'}
-補いたい力：${weakSelected.join('・') || '特になし'}
+      // Step 2: 理由
+      let s2Text = '';
+      if (step2) {
+        const cleanedReason = formatReasonText(step2);
+        if (cleanedReason.endsWith('です') || cleanedReason.endsWith('ます')) {
+          s2Text = `これは、${cleanedReason}`;
+        } else {
+          s2Text = `これは、${cleanedReason}ためです。`;
+        }
+      }
+      textParts.push(`${s1Text}${s2Text ? ' ' + s2Text : ''}`);
 
-（Step4）具体的な行動と達成目安：
-[正課内] ${step4Curriculum}
-[正課外] ${step4External}
-[達成の目安] ${step4Criteria}`;
+      // Step 3: DP（強み・課題）
+      let dpSentences = [];
+      if (strDescs.length > 0) {
+        dpSentences.push(`「${strDescs.join('」や「')}」という強みを活かしつつ`);
+      }
+      if (weakDescs.length > 0) {
+        dpSentences.push(`「${weakDescs.join('」や「')}」の能力向上・克服に努めます`);
+      }
+      if (dpSentences.length > 0) {
+        textParts.push(`目標達成に向け、${dpSentences.join('、')}。`);
+      }
+
+      // Step 4: 具体的な行動と達成目安
+      let actionSentences = [];
+      if (step4Curriculum) actionSentences.push(`正課内において${step4Curriculum}に励み`);
+      if (step4External) actionSentences.push(`正課外では${step4External}に取り組みます`);
+
+      let actionText = actionSentences.length > 0 ? `具体的には、${actionSentences.join('、')}。` : '';
+      let criteriaText = step4Criteria ? `そして、${step4Criteria}を目標達成の目安とします。` : '';
+
+      if (actionText || criteriaText) {
+        textParts.push(`${actionText}${criteriaText ? ' ' + criteriaText : ''}`);
+      }
     }
 
-    document.getElementById('outputText').value = text;
+    const generatedText = textParts.join('\n\n');
+    document.getElementById('outputText').value = generatedText;
 
+    // GASへログ送信
     const deptSelect = document.getElementById('department-select');
     const deptName = deptSelect.options[deptSelect.selectedIndex].text;
 
@@ -1384,25 +1480,25 @@ ${step2}
       inputMode: currentSubMode === 'career' ? 'キャリアビジョン' : '学期目標',
       targetTerm: targetTerm,
       maxStep: maxStepReached,
-      step1: step1,
-      step2: step2,
+      step1: step1 || '未入力',
+      step2: step2 || '未記入',
       strSelected: strSelected,
       weakSelected: weakSelected,
-      step4Curriculum: step4Curriculum,
-      step4External: step4External,
-      step4Criteria: step4Criteria,
-      generatedText: text
+      step4Curriculum: step4Curriculum || '授業の積極的履修',
+      step4External: step4External || '自主的な学習・活動',
+      step4Criteria: step4Criteria || '特になし',
+      generatedText: generatedText
     };
 
-   if (GAS_LOG_URL && !GAS_LOG_URL.includes("【ここに")) {
-     try {
+    if (GAS_LOG_URL && !GAS_LOG_URL.includes("【ここに")) {
+      try {
         await fetch(GAS_LOG_URL, {
           method: "POST",
           mode: "no-cors",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "text/plain" },
           body: JSON.stringify(logPayload)
         });
-        console.log("ログの保存に成功しました");
+        console.log("ログの保存リクエストを送信しました");
       } catch (err) {
         console.warn("ログ保存エラー:", err);
       }
