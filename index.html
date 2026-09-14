@@ -938,43 +938,26 @@
       let category2Idx = header.indexOf('科目区分2');
       if (category2Idx === -1) category2Idx = header.indexOf('科目区分');
 
-      // 教養CSVの小項目（DP1-1, DP1-2...）を学科CSVの大項目（DP1, DP2...）に統合マッピング
+      // 教養CSVの各小項目（DP1-1〜DP4-3）を、学科CSVの対応する20個のDP列（DP1-1〜DP4-3）へダイレクトに1対1でマッピング
       const processedCommonRows = commonParsed.rows.map(row => {
         const alignedRow = header.map(colName => {
+          // 1. ヘッダー名の完全一致をチェック
           let idx = commonParsed.header.indexOf(colName);
           if (idx !== -1) {
             return row[idx] || '';
           }
 
+          // 2. DP列（DP1-1, DP1-2, ..., DP4-3）のコード部分（DP1-1等）による一致チェック
           if (colName.includes('DP')) {
-            const dpMatch = colName.match(/DP\d+/i);
+            const dpMatch = colName.match(/DP\d+[-_]\d+/i);
             if (dpMatch) {
-              const dpCode = dpMatch[0].toUpperCase(); // 例: "DP1"
-              
-              // 教養CSVの全ヘッダーから "DP1-" または "DP1:" 等で始まる列を探す
-              const matchingIndices = [];
-              commonParsed.header.forEach((h, hIdx) => {
-                const upperH = h.toUpperCase();
-                if (upperH === dpCode || upperH.startsWith(dpCode + '-') || upperH.startsWith(dpCode + '：') || upperH.startsWith(dpCode + ':')) {
-                  matchingIndices.push(hIdx);
-                }
+              const dpCode = dpMatch[0].toUpperCase().replace('_', '-'); // 例: "DP1-1"
+              idx = commonParsed.header.findIndex(h => {
+                const upperH = h.toUpperCase().trim().replace('_', '-');
+                return upperH === dpCode || upperH.startsWith(dpCode + ':') || upperH.startsWith(dpCode + '：');
               });
-
-              if (matchingIndices.length > 0) {
-                let hasDoubleCircle = false;
-                let hasCircle = false;
-                for (const mIdx of matchingIndices) {
-                  const cellVal = row[mIdx] ? row[mIdx].trim() : '';
-                  if (cellVal.includes('◎')) {
-                    hasDoubleCircle = true;
-                    break;
-                  } else if (cellVal.includes('○') || cellVal.includes('◯') || cellVal.includes('〇')) {
-                    hasCircle = true;
-                  }
-                }
-                if (hasDoubleCircle) return '◎';
-                if (hasCircle) return '○';
-                return '';
+              if (idx !== -1) {
+                return row[idx] || '';
               }
             }
           }
@@ -1049,6 +1032,7 @@
     });
   }
 
+  // 20の小項目DPそれぞれの獲得pt・最大ptを計算
   function calculateDPsAndSummary() {
     const checkedCategories = new Set(
       Array.from(document.querySelectorAll('.cat-cb:checked')).map(cb => cb.value)
