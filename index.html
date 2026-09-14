@@ -6,8 +6,6 @@
   <title>学修PDCAサポートアプリ</title>
   <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- html2pdf.js CDN (PDF出力用) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     :root {
       --primary: #1e3a8a;
@@ -368,6 +366,24 @@
       line-height: 1.5;
     }
 
+    /* チャートエリア */
+    .chart-box {
+      max-width: 450px;
+      margin: 10px auto;
+      height: 320px;
+      position: relative;
+    }
+    .chart-controls {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      margin-top: 8px;
+      background: #f8fafc;
+      padding: 6px;
+      border-radius: 6px;
+    }
+
     /* ボタン */
     .btn {
       background: var(--primary);
@@ -700,10 +716,16 @@
     <!-- 結果文章出力 -->
     <h3 style="margin-top:20px; font-size:0.95rem; color: var(--primary);">完成文章プレビュー（コピーしてシステムへ貼り付け）</h3>
     <textarea id="outputText" rows="14" readonly placeholder="「キャリアビジョン」と「今学期の目標」の両方を入力後、「文章を自動作成」ボタンを押すとここに結果が表示されます。"></textarea>
+
+    <!-- 非表示用メモリ内チャート描画用Canvas（PDF出力時の画像生成に使用） -->
+    <div style="position: absolute; left: -9999px; top: -9999px; width: 400px; height: 300px;">
+      <canvas id="hiddenPtCanvas" width="400" height="300"></canvas>
+      <canvas id="hiddenPctCanvas" width="400" height="300"></canvas>
+    </div>
     
     <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
       <button class="btn btn-secondary" onclick="copyToClipboard()">📋 文章をクリップボードにコピー</button>
-      <button class="btn btn-pdf" onclick="exportAnalysisPDF()">📄 分析結果をPDFで出力</button>
+      <button class="btn btn-pdf" onclick="openDiplomaSupplementWindow()">📄 分析結果をPDFで出力</button>
     </div>
   </div>
 </div>
@@ -1679,8 +1701,71 @@
     alert('「キャリアビジョン」と「今学期の目標」をクリップボードにコピーしました！');
   }
 
-  // --- PDF出力（ディプロマサプリメント機能） ---
-  async function exportAnalysisPDF() {
+  // 非表示Canvasを使って合算pt・割合%の両方のレーダーチャート画像を同期的に生成
+  function generateChartImagesData() {
+    const ctxPt = document.getElementById('hiddenPtCanvas').getContext('2d');
+    const ctxPct = document.getElementById('hiddenPctCanvas').getContext('2d');
+
+    const percentData = currentDPTotals.map((val, idx) => {
+      const maxVal = currentDPMaxTotals[idx] || 0;
+      return maxVal > 0 ? (val / maxVal) * 100 : 0;
+    });
+
+    const labels = currentDPNames.map(n => getDPDescription(n));
+
+    // チャート1: 合算pt
+    const chartPt = new Chart(ctxPt, {
+      type: 'radar',
+      data: {
+        labels: labels,
+        datasets: [{
+          data: currentDPTotals,
+          backgroundColor: 'rgba(30, 58, 138, 0.25)',
+          borderColor: 'rgba(30, 58, 138, 1)',
+          borderWidth: 1.5,
+          pointRadius: 2
+        }]
+      },
+      options: {
+        animation: false,
+        responsive: false,
+        scales: { r: { beginAtZero: true, ticks: { display: false }, pointLabels: { font: { size: 8 } } } },
+        plugins: { legend: { display: false } }
+      }
+    });
+
+    // チャート2: 達成割合%
+    const chartPct = new Chart(ctxPct, {
+      type: 'radar',
+      data: {
+        labels: labels,
+        datasets: [{
+          data: percentData,
+          backgroundColor: 'rgba(5, 150, 105, 0.25)',
+          borderColor: 'rgba(5, 150, 105, 1)',
+          borderWidth: 1.5,
+          pointRadius: 2
+        }]
+      },
+      options: {
+        animation: false,
+        responsive: false,
+        scales: { r: { beginAtZero: true, max: 100, ticks: { display: false }, pointLabels: { font: { size: 8 } } } },
+        plugins: { legend: { display: false } }
+      }
+    });
+
+    const imgPt = document.getElementById('hiddenPtCanvas').toDataURL('image/png');
+    const imgPct = document.getElementById('hiddenPctCanvas').toDataURL('image/png');
+
+    chartPt.destroy();
+    chartPct.destroy();
+
+    return { imgPt, imgPct };
+  }
+
+  // --- ディプロマサプリメントを別ウィンドウで開き、印刷ダイアログを起動 ---
+  function openDiplomaSupplementWindow() {
     const generatedText = document.getElementById('outputText').value;
     if (!generatedText) {
       alert('PDFを出力する前に「✨ 入力内容から文章を自動作成」を実行してください。');
@@ -1707,160 +1792,204 @@
       }
     });
 
-    // 一時的なPDF生成DOMエレメントを作成
-    const pdfContainer = document.createElement('div');
-    pdfContainer.id = 'pdf-export-container';
-    pdfContainer.style.cssText = `
-      width: 790px;
-      padding: 24px 28px;
-      background: #ffffff;
-      color: #1e293b;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      font-size: 11px;
-      line-height: 1.4;
-      box-sizing: border-box;
-    `;
-
+    // 2種類のチャート画像Base64を生成
+    const { imgPt, imgPct } = generateChartImagesData();
     const currentDate = new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
 
-    pdfContainer.innerHTML = `
-      <div style="border-bottom: 2.5px solid #1e3a8a; padding-bottom: 8px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: flex-end;">
-        <div>
-          <h1 style="font-size: 18px; margin: 0; color: #1e3a8a; font-weight: bold;">学修分析・PDCAサプリメントシート</h1>
-          <div style="font-size: 11px; color: #475569; margin-top: 2px;">所属学科：${deptName}</div>
-        </div>
-        <div style="font-size: 10px; color: #64748b; text-align: right;">発行日：${currentDate}</div>
-      </div>
-
-      <!-- 学修成果サマリー -->
-      <div style="display: flex; gap: 12px; margin-bottom: 12px;">
-        <div style="flex: 1; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 8px; text-align: center;">
-          <div style="font-size: 10px; color: #1e3a8a; font-weight: bold;">総修得単位数</div>
-          <div style="font-size: 18px; font-weight: bold; color: #1e3a8a; margin-top: 2px;">${totalCredits} <span style="font-size: 10px;">単位</span></div>
-        </div>
-        <div style="flex: 1; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 6px; padding: 8px; text-align: center;">
-          <div style="font-size: 10px; color: #047857; font-weight: bold;">GPA平均</div>
-          <div style="font-size: 18px; font-weight: bold; color: #047857; margin-top: 2px;">${gpaVal}</div>
-        </div>
-      </div>
-
-      <!-- DP能力レーダーチャート（合算pt ＆ 割合% 横並び） -->
-      <div style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; margin-bottom: 12px; background: #fafafa;">
-        <div style="font-size: 11px; font-weight: bold; color: #0f172a; margin-bottom: 6px;">■ ディプロマ・ポリシー（DP）獲得能力分析</div>
-        <div style="display: flex; gap: 10px; justify-content: space-between; align-items: center;">
-          <div style="flex: 1; text-align: center;">
-            <div style="font-size: 9px; font-weight: bold; color: #475569; margin-bottom: 4px;">獲得DPポイント（合算pt）</div>
-            <div style="height: 180px; position: relative;"><canvas id="pdfChartPt"></canvas></div>
-          </div>
-          <div style="flex: 1; text-align: center;">
-            <div style="font-size: 9px; font-weight: bold; color: #475569; margin-bottom: 4px;">DP達成割合（%）</div>
-            <div style="height: 180px; position: relative;"><canvas id="pdfChartPct"></canvas></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- キャリアビジョン ＆ 今学期の目標 -->
-      <div style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; margin-bottom: 12px; background: #ffffff;">
-        <div style="font-size: 11px; font-weight: bold; color: #0f172a; margin-bottom: 6px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">■ 学修計画・目標分析文章</div>
-        <div style="white-space: pre-wrap; font-size: 10px; line-height: 1.45; color: #334155;">${generatedText}</div>
-      </div>
-
-      <!-- 履修成績一覧 -->
-      <div style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; background: #ffffff;">
-        <div style="font-size: 11px; font-weight: bold; color: #0f172a; margin-bottom: 6px;">■ 入力済み履修科目・評価一覧（計 ${enteredSubjects.length} 科目）</div>
-        ${enteredSubjects.length > 0 ? `
-          <table style="width: 100%; border-collapse: collapse; font-size: 9.5px; text-align: left;">
-            <thead>
-              <tr style="background: #f1f5f9; border-bottom: 1px solid #cbd5e1;">
-                <th style="padding: 4px; border: 1px solid #cbd5e1;">科目名称</th>
-                <th style="padding: 4px; border: 1px solid #cbd5e1; text-align: center; width: 50px;">単位</th>
-                <th style="padding: 4px; border: 1px solid #cbd5e1; text-align: center; width: 60px;">点数</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${enteredSubjects.map(s => `
-                <tr style="border-bottom: 1px solid #e2e8f0;">
-                  <td style="padding: 3px 4px; border: 1px solid #e2e8f0;">${s.name}</td>
-                  <td style="padding: 3px 4px; border: 1px solid #e2e8f0; text-align: center;">${s.credits}</td>
-                  <td style="padding: 3px 4px; border: 1px solid #e2e8f0; text-align: center; font-weight: bold;">${s.score} 点</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        ` : `<div style="font-size: 9.5px; color: #94a3b8;">入力済みの成績データがありません</div>`}
-      </div>
-    `;
-
-    document.body.appendChild(pdfContainer);
-
-    // チャートのレンダリング (画面外/DOM配置後に描画)
-    const ctxPt = document.getElementById('pdfChartPt').getContext('2d');
-    const ctxPct = document.getElementById('pdfChartPct').getContext('2d');
-
-    const percentData = currentDPTotals.map((val, idx) => {
-      const maxVal = currentDPMaxTotals[idx] || 0;
-      return maxVal > 0 ? (val / maxVal) * 100 : 0;
-    });
-
-    new Chart(ctxPt, {
-      type: 'radar',
-      data: {
-        labels: currentDPNames.map(n => getDPDescription(n)),
-        datasets: [{
-          data: currentDPTotals,
-          backgroundColor: 'rgba(30, 58, 138, 0.25)',
-          borderColor: 'rgba(30, 58, 138, 1)',
-          borderWidth: 1.5,
-          pointRadius: 2
-        }]
-      },
-      options: {
-        animation: false,
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: { r: { beginAtZero: true, ticks: { display: false }, pointLabels: { font: { size: 7.5 } } } },
-        plugins: { legend: { display: false } }
-      }
-    });
-
-    new Chart(ctxPct, {
-      type: 'radar',
-      data: {
-        labels: currentDPNames.map(n => getDPDescription(n)),
-        datasets: [{
-          data: percentData,
-          backgroundColor: 'rgba(5, 150, 105, 0.25)',
-          borderColor: 'rgba(5, 150, 105, 1)',
-          borderWidth: 1.5,
-          pointRadius: 2
-        }]
-      },
-      options: {
-        animation: false,
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: { r: { beginAtZero: true, max: 100, ticks: { display: false }, pointLabels: { font: { size: 7.5 } } } },
-        plugins: { legend: { display: false } }
-      }
-    });
-
-    // html2pdf によるPDF変換＆ダウンロード
-    const opt = {
-      margin: [8, 8, 8, 8],
-      filename: `学修分析サプリメントシート_${deptName}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, logging: false },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
-
-    try {
-      await html2pdf().set(opt).from(pdfContainer).save();
-    } catch (err) {
-      console.error('PDF出力エラー:', err);
-      alert('PDF出力に失敗しました。');
-    } finally {
-      document.body.removeChild(pdfContainer);
+    // 別ウィンドウを開く
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('ポップアップがブロックされました。ブラウザのポップアップブロックを解除してください。');
+      return;
     }
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html lang="ja">
+      <head>
+        <meta charset="UTF-8">
+        <title>学修分析サプリメントシート - ${deptName}</title>
+        <style>
+          @page {
+            size: A4 portrait;
+            margin: 12mm 15mm;
+          }
+          body {
+            font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", MeiRyo, sans-serif;
+            color: #1e293b;
+            margin: 0;
+            padding: 0;
+            background-color: #f1f5f9;
+            font-size: 11px;
+            line-height: 1.45;
+          }
+          .no-print-bar {
+            position: sticky;
+            top: 0;
+            background: #0f172a;
+            color: #ffffff;
+            padding: 12px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            z-index: 1000;
+          }
+          .print-btn {
+            background: #059669;
+            color: #ffffff;
+            border: none;
+            padding: 10px 24px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+          }
+          .print-btn:hover { background: #047857; }
+          .a4-page {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 12mm 15mm;
+            margin: 20px auto;
+            background: #ffffff;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            box-sizing: border-box;
+          }
+          @media print {
+            body { background: #ffffff; }
+            .no-print-bar { display: none !important; }
+            .a4-page {
+              width: 100%;
+              margin: 0;
+              padding: 0;
+              box-shadow: none;
+            }
+          }
+          .header-box {
+            border-bottom: 2.5px solid #1e3a8a;
+            padding-bottom: 6px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+          }
+          .title { font-size: 18px; font-weight: bold; color: #1e3a8a; margin: 0; }
+          .subtitle { font-size: 11px; color: #475569; margin-top: 2px; }
+          .summary-grid { display: flex; gap: 12px; margin-bottom: 12px; }
+          .summary-card {
+            flex: 1;
+            border-radius: 6px;
+            padding: 8px;
+            text-align: center;
+          }
+          .chart-section {
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 8px 10px;
+            margin-bottom: 12px;
+            background: #fafafa;
+          }
+          .chart-container { display: flex; gap: 12px; justify-content: space-around; align-items: center; }
+          .chart-img-box { flex: 1; text-align: center; }
+          .chart-img-box img { width: 100%; max-width: 260px; height: auto; }
+          .section-title { font-size: 11px; font-weight: bold; color: #0f172a; margin-bottom: 6px; }
+          .text-section {
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 12px;
+            background: #ffffff;
+          }
+          .table-section {
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 10px;
+            background: #ffffff;
+          }
+          table { width: 100%; border-collapse: collapse; font-size: 9.5px; }
+          th, td { border: 1px solid #cbd5e1; padding: 4px 6px; }
+          th { background: #f1f5f9; font-weight: bold; text-align: center; }
+        </style>
+      </head>
+      <body>
+
+        <div class="no-print-bar">
+          <button class="print-btn" onclick="window.print()">🖨️ 印刷する / PDFとして保存</button>
+          <div style="font-size:11px; margin-top:4px; color:#cbd5e1;">※ 送信先を「PDFに保存」に選択するとPDF形式で保存できます。</div>
+        </div>
+
+        <div class="a4-page">
+          <div class="header-box">
+            <div>
+              <h1 class="title">学修分析・PDCAサプリメントシート</h1>
+              <div class="subtitle">所属学科：${deptName}</div>
+            </div>
+            <div style="font-size:10px; color:#64748b; text-align:right;">発行日：${currentDate}</div>
+          </div>
+
+          <!-- 成績・単位サマリー -->
+          <div class="summary-grid">
+            <div class="summary-card" style="background: #eff6ff; border: 1px solid #bfdbfe;">
+              <div style="font-size: 10px; color: #1e3a8a; font-weight: bold;">総修得単位数</div>
+              <div style="font-size: 18px; font-weight: bold; color: #1e3a8a; margin-top: 2px;">${totalCredits} <span style="font-size: 10px;">単位</span></div>
+            </div>
+            <div class="summary-card" style="background: #ecfdf5; border: 1px solid #a7f3d0;">
+              <div style="font-size: 10px; color: #047857; font-weight: bold;">GPA平均</div>
+              <div style="font-size: 18px; font-weight: bold; color: #047857; margin-top: 2px;">${gpaVal}</div>
+            </div>
+          </div>
+
+          <!-- DPレーダーチャート（横並び） -->
+          <div class="chart-section">
+            <div class="section-title">■ ディプロマ・ポリシー（DP）獲得能力分析</div>
+            <div class="chart-container">
+              <div class="chart-img-box">
+                <div style="font-size: 9px; font-weight: bold; color: #475569; margin-bottom: 2px;">獲得DPポイント (合算pt)</div>
+                <img src="${imgPt}" alt="獲得DPポイント">
+              </div>
+              <div class="chart-img-box">
+                <div style="font-size: 9px; font-weight: bold; color: #475569; margin-bottom: 2px;">DP達成割合 (%)</div>
+                <img src="${imgPct}" alt="DP達成割合">
+              </div>
+            </div>
+          </div>
+
+          <!-- 自動生成文章 -->
+          <div class="text-section">
+            <div class="section-title" style="border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">■ 学修計画・目標分析文章</div>
+            <div style="white-space: pre-wrap; font-size: 10px; line-height: 1.45; color: #334155; margin-top: 6px;">${generatedText}</div>
+          </div>
+
+          <!-- 入力済み履修科目一覧 -->
+          <div class="table-section">
+            <div class="section-title">■ 入力済み履修科目・評価一覧（計 ${enteredSubjects.length} 科目）</div>
+            ${enteredSubjects.length > 0 ? `
+              <table>
+                <thead>
+                  <tr>
+                    <th>科目名称</th>
+                    <th style="width: 60px;">単位</th>
+                    <th style="width: 70px;">点数</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${enteredSubjects.map(s => `
+                    <tr>
+                      <td>${s.name}</td>
+                      <td style="text-align: center;">${s.credits}</td>
+                      <td style="text-align: center; font-weight: bold;">${s.score} 点</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            ` : `<div style="font-size: 9.5px; color: #94a3b8;">入力済みの成績データがありません</div>`}
+          </div>
+        </div>
+
+      </body>
+      </html>
+    `);
+
+    printWindow.document.close();
   }
 
   document.addEventListener('DOMContentLoaded', () => {
