@@ -938,9 +938,17 @@
       let category2Idx = header.indexOf('科目区分2');
       if (category2Idx === -1) category2Idx = header.indexOf('科目区分');
 
+      // 教養CSVの行を学科CSVのヘッダー順にアライメント（DP1などのプレフィックスマッチで柔軟に対応）
       const processedCommonRows = commonParsed.rows.map(row => {
         const alignedRow = header.map(colName => {
-          const idx = commonParsed.header.indexOf(colName);
+          let idx = commonParsed.header.indexOf(colName);
+          if (idx === -1 && colName.includes('DP')) {
+            const dpMatch = colName.match(/DP\d+/i);
+            if (dpMatch) {
+              const dpCode = dpMatch[0].toUpperCase();
+              idx = commonParsed.header.findIndex(h => h.toUpperCase().includes(dpCode));
+            }
+          }
           return (idx !== -1 && idx < row.length) ? row[idx] : '';
         });
         if (category2Idx !== -1) alignedRow[category2Idx] = '教養科目';
@@ -1011,6 +1019,68 @@
     });
   }
 
+  // 分子・分母を常に同期して正確に計算・描画する統一ロジック
+  function calculateDPsAndSummary() {
+    const checkedCategories = new Set(
+      Array.from(document.querySelectorAll('.cat-cb:checked')).map(cb => cb.value)
+    );
+
+    let nameIdx = rawData.header.indexOf('科目名称');
+    if (nameIdx === -1) nameIdx = rawData.header.indexOf('授業科目の名称');
+    let unitsIdx = rawData.header.indexOf('単位数');
+    if (unitsIdx === -1) unitsIdx = rawData.header.indexOf('単位');
+    let category2Idx = rawData.header.indexOf('科目区分2');
+    if (category2Idx === -1) category2Idx = rawData.header.indexOf('科目区分');
+
+    const dpColIndices = [];
+    rawData.header.forEach((headerName, idx) => {
+      if (headerName.includes('DP')) dpColIndices.push(idx);
+    });
+
+    const dpTotals = {};
+    const dpMaxTotals = {};
+    dpColIndices.forEach(idx => { dpTotals[idx] = 0; dpMaxTotals[idx] = 0; });
+
+    rawData.rows.forEach(row => {
+      const category2 = category2Idx !== -1 ? row[category2Idx] : '';
+      // 選択されているカテゴリ（教養含む）のみを分母・分子の集計対象に適用
+      if (checkedCategories.has(category2)) {
+        const subjectName = nameIdx !== -1 ? row[nameIdx] : '';
+        const credits = (unitsIdx !== -1 && row[unitsIdx]) ? (parseFloat(row[unitsIdx]) || 1) : 1;
+        const weight = getScoreWeight(userScores[subjectName]);
+
+        dpColIndices.forEach(idx => {
+          const cleanCell = row[idx] ? row[idx].trim() : '';
+          let basePts = 0;
+          if (cleanCell.includes('◎')) basePts = 2;
+          else if (cleanCell.includes('○') || cleanCell.includes('〇') || cleanCell.includes('◯')) basePts = 1;
+
+          // 分母（最大可能pt）
+          dpMaxTotals[idx] += basePts * credits;
+
+          // 分子（獲得pt）
+          if (weight > 0) {
+            dpTotals[idx] += basePts * credits * weight;
+          }
+        });
+      }
+    });
+
+    currentDPNames = dpColIndices.map(idx => rawData.header[idx]);
+    currentDPTotals = dpColIndices.map(idx => dpTotals[idx]);
+    currentDPMaxTotals = dpColIndices.map(idx => dpMaxTotals[idx]);
+
+    // DPカードの更新
+    dpColIndices.forEach((idx, i) => {
+      const cardValEl = document.getElementById(`card-dp-${idx}`);
+      if (cardValEl) cardValEl.innerHTML = `${currentDPTotals[i].toFixed(1)} <span style="font-size:0.65rem;">pt</span>`;
+    });
+
+    calculateTotalEarnedCreditsAndGPA();
+    renderRadarChart();
+    renderDPCheckboxesInPlan();
+  }
+
   function renderTable() {
     const yearFilter = document.getElementById('year-select').value;
     const searchFilter = document.getElementById('search-input').value.toLowerCase();
@@ -1036,31 +1106,12 @@
     let nameIdx = rawData.header.indexOf('科目名称');
     if (nameIdx === -1) nameIdx = rawData.header.indexOf('授業科目の名称');
     const yearIdx = rawData.header.indexOf('配当年次');
-    let unitsIdx = rawData.header.indexOf('単位数');
-    if (unitsIdx === -1) unitsIdx = rawData.header.indexOf('単位');
     let category2Idx = rawData.header.indexOf('科目区分2');
     if (category2Idx === -1) category2Idx = rawData.header.indexOf('科目区分');
 
     const dpColIndices = [];
     rawData.header.forEach((headerName, idx) => {
       if (headerName.includes('DP')) dpColIndices.push(idx);
-    });
-
-    const dpTotals = {}; const dpMaxTotals = {};
-    dpColIndices.forEach(idx => { dpTotals[idx] = 0; dpMaxTotals[idx] = 0; });
-
-    rawData.rows.forEach(row => {
-      const category2 = category2Idx !== -1 ? row[category2Idx] : '';
-      if (checkedCategories.has(category2)) {
-        const credits = (unitsIdx !== -1 && row[unitsIdx]) ? (parseFloat(row[unitsIdx]) || 1) : 1;
-        dpColIndices.forEach(idx => {
-          const cleanCell = row[idx] ? row[idx].trim() : '';
-          let basePts = 0;
-          if (cleanCell.includes('◎')) basePts = 2;
-          else if (cleanCell.includes('○') || cleanCell.includes('〇') || cleanCell.includes('◯')) basePts = 1;
-          dpMaxTotals[idx] += basePts * credits;
-        });
-      }
     });
 
     const trHead = document.createElement('tr');
@@ -1085,7 +1136,6 @@
       const subjectName = nameIdx !== -1 ? row[nameIdx] : '';
       const academicYear = yearIdx !== -1 ? row[yearIdx] : '';
       const category2 = category2Idx !== -1 ? row[category2Idx] : '';
-      const credits = (unitsIdx !== -1 && row[unitsIdx]) ? (parseFloat(row[unitsIdx]) || 1) : 1;
 
       const matchCategory = checkedCategories.has(category2);
       const matchYear = (yearFilter === 'all' || academicYear.includes(yearFilter));
@@ -1095,7 +1145,6 @@
         visibleCount++;
         const tr = document.createElement('tr');
         const userScoreVal = userScores[subjectName];
-        const weight = getScoreWeight(userScoreVal);
 
         row.forEach((cell, idx) => {
           if (excludeColIndices.includes(idx)) return;
@@ -1124,18 +1173,11 @@
               userScores[subjectName] = val;
               if (val !== '') scoreInput.classList.add('has-value');
               else scoreInput.classList.remove('has-value');
-              recalculateDPs();
+              calculateDPsAndSummary();
             });
 
             tdScore.appendChild(scoreInput);
             tr.appendChild(tdScore);
-          }
-
-          if (dpColIndices.includes(idx) && weight > 0) {
-            let basePts = 0;
-            if (cleanCell.includes('◎')) basePts = 2;
-            else if (cleanCell.includes('○') || cleanCell.includes('〇') || cleanCell.includes('◯')) basePts = 1;
-            dpTotals[idx] += basePts * credits * weight;
           }
         });
         tBody.appendChild(tr);
@@ -1143,66 +1185,21 @@
     });
 
     countDiv.textContent = `表示件数: ${visibleCount} 件`;
-    calculateTotalEarnedCreditsAndGPA();
 
-    currentDPNames = dpColIndices.map(idx => rawData.header[idx]);
-    currentDPTotals = dpColIndices.map(idx => dpTotals[idx]);
-    currentDPMaxTotals = dpColIndices.map(idx => dpMaxTotals[idx]);
-
+    // DPカードの枠組生成
     dpColIndices.forEach(idx => {
       const dpName = rawData.header[idx];
       const card = document.createElement('div');
       card.className = 'dp-card';
       card.innerHTML = `
         <span class="dp-name">${dpName}</span>
-        <span class="dp-val" id="card-dp-${idx}">${dpTotals[idx].toFixed(1)} <span style="font-size:0.65rem;">pt</span></span>
+        <span class="dp-val" id="card-dp-${idx}">0.0 <span style="font-size:0.65rem;">pt</span></span>
       `;
       dpCardsContainer.appendChild(card);
     });
 
-    renderRadarChart();
-    renderDPCheckboxesInPlan();
-  }
-
-  function recalculateDPs() {
-    let nameIdx = rawData.header.indexOf('科目名称');
-    if (nameIdx === -1) nameIdx = rawData.header.indexOf('授業科目の名称');
-    let unitsIdx = rawData.header.indexOf('単位数');
-    if (unitsIdx === -1) unitsIdx = rawData.header.indexOf('単位');
-
-    const dpColIndices = [];
-    rawData.header.forEach((headerName, idx) => {
-      if (headerName.includes('DP')) dpColIndices.push(idx);
-    });
-
-    const dpTotals = {};
-    dpColIndices.forEach(idx => dpTotals[idx] = 0);
-
-    rawData.rows.forEach(row => {
-      const subjectName = nameIdx !== -1 ? row[nameIdx] : '';
-      const credits = (unitsIdx !== -1 && row[unitsIdx]) ? (parseFloat(row[unitsIdx]) || 1) : 1;
-      const weight = getScoreWeight(userScores[subjectName]);
-
-      if (weight > 0) {
-        dpColIndices.forEach(idx => {
-          const cleanCell = row[idx] ? row[idx].trim() : '';
-          let basePts = 0;
-          if (cleanCell.includes('◎')) basePts = 2;
-          else if (cleanCell.includes('○') || cleanCell.includes('〇') || cleanCell.includes('◯')) basePts = 1;
-          dpTotals[idx] += basePts * credits * weight;
-        });
-      }
-    });
-
-    dpColIndices.forEach((idx, i) => {
-      const cardValEl = document.getElementById(`card-dp-${idx}`);
-      if (cardValEl) cardValEl.innerHTML = `${dpTotals[idx].toFixed(1)} <span style="font-size:0.65rem;">pt</span>`;
-      currentDPTotals[i] = dpTotals[idx];
-    });
-
-    calculateTotalEarnedCreditsAndGPA();
-    renderRadarChart();
-    renderDPCheckboxesInPlan();
+    // 集計実行
+    calculateDPsAndSummary();
   }
 
   function renderRadarChart() {
@@ -1662,14 +1659,13 @@
     const fullGeneratedText = `${careerOutput}\n\n=========================================\n\n${termOutput}`;
     document.getElementById('outputText').value = fullGeneratedText;
 
-// --- GASへのログ送信 ---
+    // --- GASへのログ送信 ---
     const deptSelect = document.getElementById('department-select');
     const deptName = deptSelect.options[deptSelect.selectedIndex].text;
     const studentId = document.getElementById('student-id').value.trim();
     const studentName = document.getElementById('student-name').value.trim();
     const { totalCredits, gpaVal } = calculateTotalEarnedCreditsAndGPA();
 
-    // 各DPの獲得ポイント文字列を作成 (例: "DP1: 12.0pt / DP2: 8.0pt")
     const dpSummary = currentDPNames.map((name, idx) => {
       return `${getDPDescription(name)}: ${(currentDPTotals[idx] || 0).toFixed(1)}pt`;
     }).join(' / ');
