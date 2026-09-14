@@ -527,6 +527,18 @@
 
     <div id="error-message"></div>
 
+    <!-- 氏名・学籍番号入力エリア -->
+    <div class="controls-grid" style="margin-bottom: 10px;">
+      <div class="form-group no-margin">
+        <label for="student-id">学籍番号</label>
+        <input type="text" id="student-id" placeholder="例：2200000">
+      </div>
+      <div class="form-group no-margin">
+        <label for="student-name">氏名</label>
+        <input type="text" id="student-name" placeholder="例：尚美 太郎">
+      </div>
+    </div>
+
     <!-- 件数 ＆ 総修得単位数・GPA表示エリア -->
     <div style="margin-bottom: 12px;">
       <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 6px;">
@@ -1653,9 +1665,13 @@
     // --- GASへのログ送信 ---
     const deptSelect = document.getElementById('department-select');
     const deptName = deptSelect.options[deptSelect.selectedIndex].text;
+    const studentId = document.getElementById('student-id').value.trim();
+    const studentName = document.getElementById('student-name').value.trim();
 
     const logPayload = {
       department: deptName,
+      studentId: studentId,
+      studentName: studentName,
       career: planFormData.career,
       term: planFormData.term,
       generatedText: fullGeneratedText
@@ -1711,6 +1727,9 @@
       return maxVal > 0 ? (val / maxVal) * 100 : 0;
     });
 
+    const maxRatio = Math.max(...percentData, 0);
+    const maxScalePct = (maxRatio === 0) ? 10 : Math.min(100, Math.ceil((maxRatio + 2) / 5) * 5);
+
     const labels = currentDPNames.map(n => getDPDescription(n));
 
     // チャート1: 合算pt
@@ -1750,7 +1769,7 @@
       options: {
         animation: false,
         responsive: false,
-        scales: { r: { beginAtZero: true, max: 100, ticks: { display: false }, pointLabels: { font: { size: 8 } } } },
+        scales: { r: { beginAtZero: true, max: maxScalePct, ticks: { display: false }, pointLabels: { font: { size: 8 } } } },
         plugins: { legend: { display: false } }
       }
     });
@@ -1774,23 +1793,9 @@
 
     const deptSelect = document.getElementById('department-select');
     const deptName = deptSelect.options[deptSelect.selectedIndex].text;
+    const studentId = document.getElementById('student-id').value.trim() || '未入力';
+    const studentName = document.getElementById('student-name').value.trim() || '未入力';
     const { totalCredits, gpaVal } = calculateTotalEarnedCreditsAndGPA();
-
-    // 入力済み科目リストの抽出
-    let nameIdx = rawData.header.indexOf('科目名称');
-    if (nameIdx === -1) nameIdx = rawData.header.indexOf('授業科目の名称');
-    let unitsIdx = rawData.header.indexOf('単位数');
-    if (unitsIdx === -1) unitsIdx = rawData.header.indexOf('単位');
-
-    const enteredSubjects = [];
-    rawData.rows.forEach(row => {
-      const subjectName = nameIdx !== -1 ? row[nameIdx] : '';
-      const credits = (unitsIdx !== -1 && row[unitsIdx]) ? (parseFloat(row[unitsIdx]) || 1) : 1;
-      const scoreVal = userScores[subjectName];
-      if (scoreVal !== undefined && scoreVal !== '' && scoreVal !== null) {
-        enteredSubjects.push({ name: subjectName, credits: credits, score: scoreVal });
-      }
-    });
 
     // 2種類のチャート画像Base64を生成
     const { imgPt, imgPct } = generateChartImagesData();
@@ -1873,7 +1878,7 @@
             align-items: flex-end;
           }
           .title { font-size: 18px; font-weight: bold; color: #1e3a8a; margin: 0; }
-          .subtitle { font-size: 11px; color: #475569; margin-top: 2px; }
+          .subtitle { font-size: 11px; color: #475569; margin-top: 4px; }
           .summary-grid { display: flex; gap: 12px; margin-bottom: 12px; }
           .summary-card {
             flex: 1;
@@ -1896,18 +1901,8 @@
             border: 1px solid #cbd5e1;
             border-radius: 6px;
             padding: 10px;
-            margin-bottom: 12px;
             background: #ffffff;
           }
-          .table-section {
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
-            padding: 10px;
-            background: #ffffff;
-          }
-          table { width: 100%; border-collapse: collapse; font-size: 9.5px; }
-          th, td { border: 1px solid #cbd5e1; padding: 4px 6px; }
-          th { background: #f1f5f9; font-weight: bold; text-align: center; }
         </style>
       </head>
       <body>
@@ -1921,7 +1916,11 @@
           <div class="header-box">
             <div>
               <h1 class="title">学修分析・PDCAサプリメントシート</h1>
-              <div class="subtitle">所属学科：${deptName}</div>
+              <div class="subtitle">
+                所属学科：<strong>${deptName}</strong> &nbsp;|&nbsp; 
+                学籍番号：<strong>${studentId}</strong> &nbsp;|&nbsp; 
+                氏名：<strong>${studentName}</strong>
+              </div>
             </div>
             <div style="font-size:10px; color:#64748b; text-align:right;">発行日：${currentDate}</div>
           </div>
@@ -1957,31 +1956,6 @@
           <div class="text-section">
             <div class="section-title" style="border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">■ 学修計画・目標分析文章</div>
             <div style="white-space: pre-wrap; font-size: 10px; line-height: 1.45; color: #334155; margin-top: 6px;">${generatedText}</div>
-          </div>
-
-          <!-- 入力済み履修科目一覧 -->
-          <div class="table-section">
-            <div class="section-title">■ 入力済み履修科目・評価一覧（計 ${enteredSubjects.length} 科目）</div>
-            ${enteredSubjects.length > 0 ? `
-              <table>
-                <thead>
-                  <tr>
-                    <th>科目名称</th>
-                    <th style="width: 60px;">単位</th>
-                    <th style="width: 70px;">点数</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${enteredSubjects.map(s => `
-                    <tr>
-                      <td>${s.name}</td>
-                      <td style="text-align: center;">${s.credits}</td>
-                      <td style="text-align: center; font-weight: bold;">${s.score} 点</td>
-                    </tr>
-                  `).join('')}
-                </tbody>
-              </table>
-            ` : `<div style="font-size: 9.5px; color: #94a3b8;">入力済みの成績データがありません</div>`}
           </div>
         </div>
 
