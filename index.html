@@ -683,6 +683,12 @@
         <input type="text" id="step4-criteria" placeholder="例：アルバイトでリーダーを務める、課題の進捗管理を徹底する">
       </div>
 
+      <!-- キャリアビジョン専用：既に取得している資格・受賞歴など -->
+      <div class="form-group" id="step4-achievements-group">
+        <label>④ 既に取得している資格・受賞歴など</label>
+        <input type="text" id="step4-achievements" placeholder="例：英検2級、〇〇コンクール優秀賞、ITパスポート">
+      </div>
+
       <!-- 相互誘導ネクストアクションボタン -->
       <div id="submode-nav-career" style="margin-top: 14px; text-align: center;">
         <button type="button" class="btn btn-secondary" style="background:#0f172a; color:#fff;" onclick="switchSubMode('term'); scrollToPlanTop();">
@@ -744,7 +750,7 @@
 
 <script>
   const COMMON_CSV_FILE = 'art_expression05.csv';
-  const GAS_LOG_URL = "https://script.google.com/macros/s/AKfycbxhnAuLSDC9RNJVMchz43usXKjWeVHhRIlOvi3EdKZVIKStYaDGGx_61-4wWSkbBvfT/exec";
+  const GAS_LOG_URL = "https://script.google.com/macros/library/d/1SHSrzlGTSKPk11W4AFHtnJ1VcEpHKsVqKWeiIVAqcda1jg3q8DEizltb/3";
 
   let rawData = { header: [], rows: [] };
   const userScores = {}; 
@@ -765,7 +771,8 @@
       step4Curriculum: '',
       step4Certification: '',
       step4External: '',
-      step4Criteria: ''
+      step4Criteria: '',
+      step4Achievements: ''
     },
     term: {
       step1: '',
@@ -941,17 +948,15 @@
       // 教養CSVの各小項目（DP1-1〜DP4-3）を、学科CSVの対応する20個のDP列（DP1-1〜DP4-3）へダイレクトに1対1でマッピング
       const processedCommonRows = commonParsed.rows.map(row => {
         const alignedRow = header.map(colName => {
-          // 1. ヘッダー名の完全一致をチェック
           let idx = commonParsed.header.indexOf(colName);
           if (idx !== -1) {
             return row[idx] || '';
           }
 
-          // 2. DP列（DP1-1, DP1-2, ..., DP4-3）のコード部分（DP1-1等）による一致チェック
           if (colName.includes('DP')) {
             const dpMatch = colName.match(/DP\d+[-_]\d+/i);
             if (dpMatch) {
-              const dpCode = dpMatch[0].toUpperCase().replace('_', '-'); // 例: "DP1-1"
+              const dpCode = dpMatch[0].toUpperCase().replace('_', '-');
               idx = commonParsed.header.findIndex(h => {
                 const upperH = h.toUpperCase().trim().replace('_', '-');
                 return upperH === dpCode || upperH.startsWith(dpCode + ':') || upperH.startsWith(dpCode + '：');
@@ -1032,7 +1037,6 @@
     });
   }
 
-  // 20の小項目DPそれぞれの獲得pt・最大ptを計算
   function calculateDPsAndSummary() {
     const checkedCategories = new Set(
       Array.from(document.querySelectorAll('.cat-cb:checked')).map(cb => cb.value)
@@ -1423,6 +1427,11 @@
     target.step4External = document.getElementById('step4-external').value.trim();
     target.step4Criteria = document.getElementById('step4-criteria').value.trim();
 
+    if (currentSubMode === 'career') {
+      const achEl = document.getElementById('step4-achievements');
+      if (achEl) target.step4Achievements = achEl.value.trim();
+    }
+
     checkSubModeCompletion();
   }
 
@@ -1454,6 +1463,7 @@
     const step4TitleLabel = document.getElementById('step4-title-label');
     const targetTermGroup = document.getElementById('targetTermGroup');
     const criteriaGroup = document.getElementById('step4-criteria-group');
+    const achievementsGroup = document.getElementById('step4-achievements-group');
     const navCareer = document.getElementById('submode-nav-career');
     const navTerm = document.getElementById('submode-nav-term');
 
@@ -1464,6 +1474,7 @@
       step4TitleLabel.textContent = '卒業までに取り組みたい具体的な行動';
       targetTermGroup.style.display = 'none';
       criteriaGroup.style.display = 'none';
+      achievementsGroup.style.display = 'block';
       navCareer.style.display = 'block';
       navTerm.style.display = 'none';
     } else {
@@ -1473,6 +1484,7 @@
       step4TitleLabel.textContent = '目標に向けた具体的な行動';
       targetTermGroup.style.display = 'block';
       criteriaGroup.style.display = 'block';
+      achievementsGroup.style.display = 'none';
       navCareer.style.display = 'none';
       navTerm.style.display = 'block';
     }
@@ -1485,6 +1497,9 @@
     document.getElementById('step4-certification').value = data.step4Certification || '';
     document.getElementById('step4-external').value = data.step4External || '';
     document.getElementById('step4-criteria').value = data.step4Criteria || '';
+    if (document.getElementById('step4-achievements')) {
+      document.getElementById('step4-achievements').value = planFormData.career.step4Achievements || '';
+    }
 
     updateStepHints();
     renderDPCheckboxesInPlan();
@@ -1808,6 +1823,9 @@
     const studentId = document.getElementById('student-id').value.trim() || '未入力';
     const studentName = document.getElementById('student-name').value.trim() || '未入力';
     const { totalCredits, gpaVal } = calculateTotalEarnedCreditsAndGPA();
+    
+    // 既に取得している資格・受賞歴などの取得
+    const achievements = planFormData.career.step4Achievements || '特になし';
 
     // 2種類のチャート画像Base64を生成
     const { imgPt, imgPct } = generateChartImagesData();
@@ -1914,6 +1932,7 @@
             border-radius: 6px;
             padding: 10px;
             background: #ffffff;
+            margin-bottom: 12px;
           }
         </style>
       </head>
@@ -1969,6 +1988,13 @@
             <div class="section-title" style="border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">■ 学修計画・目標分析文章</div>
             <div style="white-space: pre-wrap; font-size: 10px; line-height: 1.45; color: #334155; margin-top: 6px;">${generatedText}</div>
           </div>
+
+          <!-- 既取得資格・受賞歴・活動実績（シート一番下に配置） -->
+          <div class="text-section">
+            <div class="section-title" style="border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">■ 保有資格・表彰・活動実績</div>
+            <div style="white-space: pre-wrap; font-size: 10px; line-height: 1.45; color: #334155; margin-top: 6px;">${achievements}</div>
+          </div>
+
         </div>
 
       </body>
@@ -1996,7 +2022,7 @@
       updateRecommendations();
     });
 
-    ['step1-input', 'step2-input', 'step4-curriculum', 'step4-certification', 'step4-external', 'step4-criteria'].forEach(id => {
+    ['step1-input', 'step2-input', 'step4-curriculum', 'step4-certification', 'step4-external', 'step4-criteria', 'step4-achievements'].forEach(id => {
       const el = document.getElementById(id);
       if (el) {
         el.addEventListener('input', () => {
