@@ -614,7 +614,7 @@
       <span class="chip-label">💡 学科のヒントキーワード（ワンタップで入力）:</span>
       <div class="hint-chip-container" id="step1-chips"></div>
 
-      <input type="text" id="step1-input" placeholder="例：映像制作に関わる仕事がしたい、IT分野に興味がある">
+      <input type="text" id="step1-input" placeholder="例：映像制作、IT分野、音楽ビジネス、演奏家、作曲家、、、">
     </div>
 
     <!-- STEP 2 -->
@@ -625,7 +625,7 @@
       <span class="chip-label">💡 きっかけのヒント:</span>
       <div class="hint-chip-container" id="step2-chips"></div>
 
-      <textarea id="step2-input" rows="2" placeholder="例：小さい頃から映画が好きで、人を感動させる表現に憧れているから"></textarea>
+      <textarea id="step2-input" rows="2" placeholder="例：小さい頃から音楽が好きで、人を感動させる表現に憧れている。ソーシャルメディアに興味があり、可能性を感じている。など"></textarea>
     </div>
 
     <!-- STEP 3（ランキング順に表示） -->
@@ -801,7 +801,7 @@
     'art_expression02.csv': {
       career: {
         step1: ['演奏家・ソリスト', '音楽指導者', '舞台ディレクター', 'アートイベントプロデューサー', '作曲家・サウンドデザイナー'],
-        step2: ['自分の演奏で人の心を動かしたいから', '音楽と他ジャンルを融合した舞台を作りたいから', '表現技法を深く探求したいから']
+        step2: ['自分の演奏で人の心を動かしたい', '音楽と他ジャンルを融合した表現をしたい', '新しい表現を開拓したい']
       },
       term: {
         step1: ['ソロ演奏技法の探求', '作曲・編曲演習の実施', '音響エンジニアリングの実習', 'アンサンブル・舞台表現の練習', '演奏会・創作活動の企画'],
@@ -1684,7 +1684,7 @@
 
     const allStrengths = Array.from(new Set([...sortedTopDPs, ...cStrDescs]));
     let cStrengthText = allStrengths.length > 0
-      ? `私の強みは、DP分析に基づく「${allStrengths.join('」や「')}」です。これまでの学びを通じて自身の強みを磨き、主体的に課題へ取り組む姿勢を培ってきました。`
+      ? `私の強みは、「${allStrengths.join('」や「')}」です。これまでの学びを通じて自身の強みを磨き、主体的に課題へ取り組む姿勢を培ってきました。`
       : `私の強みは、自発的な行動力と継続的な学修意欲です。これまでの学びを通じて自身の資質を磨き、主体的に取り組む姿勢を培ってきました。`;
 
     let cGradSentences = [];
