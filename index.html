@@ -1662,16 +1662,25 @@
     const fullGeneratedText = `${careerOutput}\n\n=========================================\n\n${termOutput}`;
     document.getElementById('outputText').value = fullGeneratedText;
 
-    // --- GASへのログ送信 ---
+// --- GASへのログ送信 ---
     const deptSelect = document.getElementById('department-select');
     const deptName = deptSelect.options[deptSelect.selectedIndex].text;
     const studentId = document.getElementById('student-id').value.trim();
     const studentName = document.getElementById('student-name').value.trim();
+    const { totalCredits, gpaVal } = calculateTotalEarnedCreditsAndGPA();
+
+    // 各DPの獲得ポイント文字列を作成 (例: "DP1: 12.0pt / DP2: 8.0pt")
+    const dpSummary = currentDPNames.map((name, idx) => {
+      return `${getDPDescription(name)}: ${(currentDPTotals[idx] || 0).toFixed(1)}pt`;
+    }).join(' / ');
 
     const logPayload = {
       department: deptName,
       studentId: studentId,
       studentName: studentName,
+      totalCredits: totalCredits,
+      gpaVal: gpaVal,
+      dpSummary: dpSummary,
       career: planFormData.career,
       term: planFormData.term,
       generatedText: fullGeneratedText
