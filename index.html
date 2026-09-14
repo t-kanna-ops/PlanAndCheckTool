@@ -6,6 +6,8 @@
   <title>学修PDCAサポートアプリ</title>
   <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- html2pdf.js CDN (PDF出力用) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     :root {
       --primary: #1e3a8a;
@@ -366,24 +368,6 @@
       line-height: 1.5;
     }
 
-    /* チャートエリア */
-    .chart-box {
-      max-width: 450px;
-      margin: 10px auto;
-      height: 320px;
-      position: relative;
-    }
-    .chart-controls {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 10px;
-      margin-top: 8px;
-      background: #f8fafc;
-      padding: 6px;
-      border-radius: 6px;
-    }
-
     /* ボタン */
     .btn {
       background: var(--primary);
@@ -405,6 +389,8 @@
     .btn:hover, .btn:active { background: var(--accent); }
     .btn-secondary { background: #64748b; }
     .btn-secondary:hover { background: #475569; }
+    .btn-pdf { background: #059669; }
+    .btn-pdf:hover { background: #047857; }
     .btn-sm {
       padding: 4px 8px;
       min-height: auto;
@@ -520,15 +506,23 @@
 
     <h2><span class="step-badge">Step 2</span> 履修修得（点数）入力</h2>
     <div class="notice">
-      💡 修得点数（60〜100点）を入力してください。
+      💡 修得点数（60〜100点）を入力してください。（未修得・不合格科目は59点以下を入力）
     </div>
 
     <div id="error-message"></div>
 
-    <!-- 件数 ＆ 総修得単位数表示エリア -->
-    <div style="display: flex; justify-content: space-between; align- items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 8px;">
-      <span id="subject-count" style="font-weight: bold; font-size: 0.8rem; color: var(--primary);">表示件数: 0 件</span>
-      <span id="total-credits-count" style="font-weight: bold; font-size: 0.85rem; color: #047857; background: #ecfdf5; padding: 4px 10px; border-radius: 6px; border: 1px solid #a7f3d0;">総修得単位数: 0 単位</span>
+    <!-- 件数 ＆ 総修得単位数・GPA表示エリア -->
+    <div style="margin-bottom: 12px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 6px;">
+        <span id="subject-count" style="font-weight: bold; font-size: 0.8rem; color: var(--primary);">表示件数: 0 件</span>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <span id="total-credits-count" style="font-weight: bold; font-size: 0.85rem; color: #047857; background: #ecfdf5; padding: 4px 10px; border-radius: 6px; border: 1px solid #a7f3d0;">総修得単位数: 0 単位</span>
+          <span id="gpa-count" style="font-weight: bold; font-size: 0.85rem; color: #1e3a8a; background: #eff6ff; padding: 4px 10px; border-radius: 6px; border: 1px solid #bfdbfe;">GPA平均: 0.00</span>
+        </div>
+      </div>
+      <div style="font-size: 0.75rem; color: #475569; line-height: 1.4; background: #f8fafc; padding: 8px 10px; border-radius: 6px; border-left: 3px solid #64748b;">
+        📢 GPA計算の正確性のため、欠席・失格科目も0点として入力してください。成績表のGPAと異なる可能性がありますが、本ツールの表示は参考にとどめ、成績表などの大学の公式資料を参照するようにお願いします。
+      </div>
     </div>
 
     <div class="table-wrapper">
@@ -567,7 +561,7 @@
   <!-- PLAN TAB -->
   <div id="tab-plan" class="tab-content">
 
-    <!-- サブモード切替 -->
+    <!-- サブモードタブ -->
     <div class="sub-mode-tabs" id="subModeTabsAnchor">
       <button class="sub-tab-btn active" onclick="switchSubMode('career')">
         🚀 キャリアビジョン (長期) <span id="badge-career" class="status-badge incomplete">未完了</span>
@@ -624,9 +618,10 @@
     <!-- STEP 4 -->
     <div class="step-card">
       <label class="step-badge" style="margin-bottom:6px; display:inline-block;">Step 4</label>
-      <label style="font-size:0.95rem; color:var(--primary);">目標に向けた具体的な行動</label>
+      <label id="step4-title-label" style="font-size:0.95rem; color:var(--primary);">目標に向けた具体的な行動</label>
 
-      <div class="form-group" style="margin-top:8px;">
+      <!-- 年次・学期選択（今学期の目標のみで表示） -->
+      <div class="form-group" id="targetTermGroup" style="margin-top:8px; display:none;">
         <label for="targetTermSelect">目標対象の年次・学期</label>
         <select id="targetTermSelect" style="max-width: 180px;">
           <option value="1年前期">1年 前期</option>
@@ -640,19 +635,24 @@
         </select>
       </div>
 
-      <div class="form-group">
-        <label id="step4-curriculum-label">① 正課内（授業・成績向上・推奨科目）での取り組み</label>
+      <div class="form-group" style="margin-top:8px;">
+        <label id="step4-curriculum-label">① 授業・学事での取り組み</label>
         <input type="text" id="step4-curriculum" placeholder="推奨科目の選択ボタンを押すか、直接入力できます">
       </div>
 
       <div class="form-group">
-        <label id="step4-external-label">② 正課外（資格・語学・作品制作・部活等）での取り組み</label>
-        <input type="text" id="step4-external" placeholder="例：学園祭での映像制作に参加、検定試験の受検">
+        <label id="step4-certification-label">② 資格・検定・コンクールなどでの取り組み</label>
+        <input type="text" id="step4-certification" placeholder="例：基本情報技術者試験の合格、コンクールへの作品応募">
+      </div>
+
+      <div class="form-group">
+        <label id="step4-external-label">③ 課外活動・ボランティアでの取り組み</label>
+        <input type="text" id="step4-external" placeholder="例：地域ボランティアへの参加、学園祭実行委員会での活動">
       </div>
 
       <div class="form-group" id="step4-criteria-group">
-        <label>③ 学外での活動・達成の目安（ボランティア・アルバイト・目標基準）</label>
-        <input type="text" id="step4-criteria" placeholder="例：学外でのアルバイトを通して接客力を養う、課題作品を1本完成させる">
+        <label>④ 達成の目安（ボランティア・アルバイト・自己管理の目標）</label>
+        <input type="text" id="step4-criteria" placeholder="例：アルバイトでリーダーを務める、課題の進捗管理を徹底する">
       </div>
 
       <!-- 相互誘導ネクストアクションボタン -->
@@ -700,7 +700,11 @@
     <!-- 結果文章出力 -->
     <h3 style="margin-top:20px; font-size:0.95rem; color: var(--primary);">完成文章プレビュー（コピーしてシステムへ貼り付け）</h3>
     <textarea id="outputText" rows="14" readonly placeholder="「キャリアビジョン」と「今学期の目標」の両方を入力後、「文章を自動作成」ボタンを押すとここに結果が表示されます。"></textarea>
-    <button class="btn btn-secondary" style="margin-top: 8px;" onclick="copyToClipboard()">📋 文章をクリップボードにコピー</button>
+    
+    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
+      <button class="btn btn-secondary" onclick="copyToClipboard()">📋 文章をクリップボードにコピー</button>
+      <button class="btn btn-pdf" onclick="exportAnalysisPDF()">📄 分析結果をPDFで出力</button>
+    </div>
   </div>
 </div>
 
@@ -718,7 +722,6 @@
   let currentRecommendations = [];
   let currentSubMode = 'career';
 
-  // 入力データの独立保持管理オブジェクト
   const planFormData = {
     career: {
       step1: '',
@@ -726,6 +729,7 @@
       strSelected: [],
       weakSelected: [],
       step4Curriculum: '',
+      step4Certification: '',
       step4External: '',
       step4Criteria: ''
     },
@@ -736,12 +740,12 @@
       weakSelected: [],
       targetTerm: '1年前期',
       step4Curriculum: '',
+      step4Certification: '',
       step4External: '',
       step4Criteria: ''
     }
   };
 
-  // 学科別・長期/短期別のヒントキーワード構造（「ソリスト」表記修正）
   const DEPARTMENT_HINTS = {
     'art_expression01.csv': {
       career: {
@@ -803,24 +807,50 @@
     return 0;
   }
 
-  function calculateTotalEarnedCredits() {
+  function calculateTotalEarnedCreditsAndGPA() {
     let nameIdx = rawData.header.indexOf('科目名称');
     if (nameIdx === -1) nameIdx = rawData.header.indexOf('授業科目の名称');
     let unitsIdx = rawData.header.indexOf('単位数');
     if (unitsIdx === -1) unitsIdx = rawData.header.indexOf('単位');
 
     let totalCredits = 0;
+    let totalGpPoints = 0;
+    let totalGpaCredits = 0;
+
     rawData.rows.forEach(row => {
       const subjectName = nameIdx !== -1 ? row[nameIdx] : '';
-      const credits = (unitsIdx !== -1 && row[unitsIdx]) ? (parseFloat(row[unitsIdx]) || 0) : 0;
+      const credits = (unitsIdx !== -1 && row[unitsIdx]) ? (parseFloat(row[unitsIdx]) || 1) : 1;
       const scoreVal = userScores[subjectName];
+
       if (getScoreWeight(scoreVal) > 0) {
         totalCredits += credits;
       }
+
+      if (scoreVal !== undefined && scoreVal !== '' && scoreVal !== null) {
+        const score = Number(scoreVal);
+        if (!isNaN(score)) {
+          let gp = 0;
+          if (score >= 90) gp = 4;
+          else if (score >= 80) gp = 3;
+          else if (score >= 70) gp = 2;
+          else if (score >= 60) gp = 1;
+          else gp = 0;
+
+          totalGpPoints += gp * credits;
+          totalGpaCredits += credits;
+        }
+      }
     });
+
+    const gpaVal = totalGpaCredits > 0 ? (totalGpPoints / totalGpaCredits).toFixed(2) : "0.00";
 
     const creditsEl = document.getElementById('total-credits-count');
     if (creditsEl) creditsEl.textContent = `総修得単位数: ${totalCredits} 単位`;
+
+    const gpaEl = document.getElementById('gpa-count');
+    if (gpaEl) gpaEl.textContent = `GPA平均: ${gpaVal}`;
+
+    return { totalCredits, gpaVal };
   }
 
   function parseCSV(text) {
@@ -1079,7 +1109,7 @@
     });
 
     countDiv.textContent = `表示件数: ${visibleCount} 件`;
-    calculateTotalEarnedCredits();
+    calculateTotalEarnedCreditsAndGPA();
 
     currentDPNames = dpColIndices.map(idx => rawData.header[idx]);
     currentDPTotals = dpColIndices.map(idx => dpTotals[idx]);
@@ -1136,7 +1166,7 @@
       currentDPTotals[i] = dpTotals[idx];
     });
 
-    calculateTotalEarnedCredits();
+    calculateTotalEarnedCreditsAndGPA();
     renderRadarChart();
     renderDPCheckboxesInPlan();
   }
@@ -1343,7 +1373,6 @@
     else input.value = text;
   }
 
-  // フォーム入力値のデータ保存
   function saveCurrentSubModeForm() {
     const target = planFormData[currentSubMode];
     target.step1 = document.getElementById('step1-input').value.trim();
@@ -1352,15 +1381,15 @@
     target.weakSelected = Array.from(document.querySelectorAll('input[name="weak_dp"]:checked')).map(cb => cb.value);
     target.targetTerm = document.getElementById('targetTermSelect').value;
     target.step4Curriculum = document.getElementById('step4-curriculum').value.trim();
+    target.step4Certification = document.getElementById('step4-certification').value.trim();
     target.step4External = document.getElementById('step4-external').value.trim();
     target.step4Criteria = document.getElementById('step4-criteria').value.trim();
 
     checkSubModeCompletion();
   }
 
-  // 入力状況バッジのリアルタイム更新
   function checkSubModeCompletion() {
-    const isCareerComplete = planFormData.career.step1 && planFormData.career.step2 && (planFormData.career.step4Curriculum || planFormData.career.step4External);
+    const isCareerComplete = planFormData.career.step1 && planFormData.career.step2 && (planFormData.career.step4Curriculum || planFormData.career.step4Certification || planFormData.career.step4External);
     const isTermComplete = planFormData.term.step1 && planFormData.term.step2 && planFormData.term.step4Curriculum;
 
     const bCareer = document.getElementById('badge-career');
@@ -1376,7 +1405,6 @@
     }
   }
 
-  // モード切替とフォームデータ復元
   function switchSubMode(mode) {
     saveCurrentSubModeForm();
 
@@ -1385,8 +1413,8 @@
     
     const step1Label = document.getElementById('step1-title-label');
     const step2Label = document.getElementById('step2-title-label');
-    const s4CurrLabel = document.getElementById('step4-curriculum-label');
-    const s4ExtLabel = document.getElementById('step4-external-label');
+    const step4TitleLabel = document.getElementById('step4-title-label');
+    const targetTermGroup = document.getElementById('targetTermGroup');
     const criteriaGroup = document.getElementById('step4-criteria-group');
     const navCareer = document.getElementById('submode-nav-career');
     const navTerm = document.getElementById('submode-nav-term');
@@ -1395,8 +1423,8 @@
       document.querySelectorAll('.sub-tab-btn')[0].classList.add('active');
       step1Label.textContent = '卒業後になりたい職業・目指す業界・希望職種';
       step2Label.textContent = 'なぜその職業・分野に興味を持っているのか（理由・背景）';
-      s4CurrLabel.textContent = '① 正課内（授業・専門学習）での取り組み';
-      s4ExtLabel.textContent = '② 正課外（資格・作品制作・課外活動等）での取り組み';
+      step4TitleLabel.textContent = '卒業までに取り組みたい具体的な行動';
+      targetTermGroup.style.display = 'none';
       criteriaGroup.style.display = 'none';
       navCareer.style.display = 'block';
       navTerm.style.display = 'none';
@@ -1404,19 +1432,19 @@
       document.querySelectorAll('.sub-tab-btn')[1].classList.add('active');
       step1Label.textContent = '今学期の目標・挑戦したい実践（撮影編集、音響実習、企画など）';
       step2Label.textContent = 'なぜ今学期、その目標に取り組むのか';
-      s4CurrLabel.textContent = '① 正課内（学業・履修科目・成績向上）での取り組み';
-      s4ExtLabel.textContent = '② 正課外（資格取得・語学試験・課外活動）での取り組み';
+      step4TitleLabel.textContent = '目標に向けた具体的な行動';
+      targetTermGroup.style.display = 'block';
       criteriaGroup.style.display = 'block';
       navCareer.style.display = 'none';
       navTerm.style.display = 'block';
     }
 
-    // データの復元
     const data = planFormData[mode];
     document.getElementById('step1-input').value = data.step1 || '';
     document.getElementById('step2-input').value = data.step2 || '';
     document.getElementById('targetTermSelect').value = data.targetTerm || '1年前期';
     document.getElementById('step4-curriculum').value = data.step4Curriculum || '';
+    document.getElementById('step4-certification').value = data.step4Certification || '';
     document.getElementById('step4-external').value = data.step4External || '';
     document.getElementById('step4-criteria').value = data.step4Criteria || '';
 
@@ -1455,7 +1483,7 @@
       const category2 = category2Idx !== -1 ? row[category2Idx] : '';
 
       if (passedSubjectNames.includes(subjectName)) return;
-      if (!academicYear.includes(targetTerm.substring(0, 1)) && !academicYear.includes('全')) return;
+      if (currentSubMode === 'term' && !academicYear.includes(targetTerm.substring(0, 1)) && !academicYear.includes('全')) return;
 
       let score = 0;
       dpColIndices.forEach(idx => {
@@ -1524,7 +1552,6 @@
     return cleaned;
   }
 
-  // 未入力バリデーションチェック ＆ 両目標の一括自動文章生成
   async function generatePlanAndSaveLog() {
     saveCurrentSubModeForm();
 
@@ -1538,11 +1565,13 @@
 
     if (!c.step1) errors.push('【キャリアビジョン】Step 1：将来希望する職業・分野が未入力です。');
     if (!c.step2) errors.push('【キャリアビジョン】Step 2：希望する理由・背景が未入力です。');
-    if (!c.step4Curriculum && !c.step4External) errors.push('【キャリアビジョン】Step 4：正課内または正課外での具体的な行動が未入力です。');
+    if (!c.step4Curriculum && !c.step4Certification && !c.step4External) {
+      errors.push('【キャリアビジョン】Step 4：卒業までに取り組みたい具体的な行動（授業・資格・課外活動）のいずれかが未入力です。');
+    }
 
     if (!t.step1) errors.push('【今学期の目標】Step 1：今学期の目標が未入力です。');
     if (!t.step2) errors.push('【今学期の目標】Step 2：取り組む理由が未入力です。');
-    if (!t.step4Curriculum) errors.push('【今学期の目標】Step 4①：正課内（学業・成績）での取り組みが未入力です。');
+    if (!t.step4Curriculum) errors.push('【今学期の目標】Step 4①：授業・学事での取り組みが未入力です。');
 
     if (errors.length > 0) {
       errDiv.innerHTML = `⚠️ <strong>文章を自動作成するには、以下の必須項目を入力してください：</strong><br>・` + errors.join('<br>・');
@@ -1551,7 +1580,6 @@
       return;
     }
 
-    // --- 自動分析強みDPの取得 ---
     const { ptsRankMap } = getDPRanks();
     const sortedTopDPs = currentDPNames.map((name, idx) => ({
       name: getDPDescription(name),
@@ -1562,46 +1590,40 @@
     const cStrDescs = (c.strSelected || []).map(getDPDescription);
     const cWeakDescs = (c.weakSelected || []).map(getDPDescription);
 
-    let cStrengthText = '';
     const allStrengths = Array.from(new Set([...sortedTopDPs, ...cStrDescs]));
-    if (allStrengths.length > 0) {
-      cStrengthText = `私の強みは、「${allStrengths.join('」や「')}」です。これまでの学びを通じて自身の強みを磨き、主体的に課題へ取り組む姿勢を培ってきました。`;
-    } else {
-      cStrengthText = `私の強みは、自発的な行動力と継続的な学修意欲です。これまでの学びを通じて自身の資質を磨き、主体的に取り組む姿勢を培ってきました。`;
-    }
+    let cStrengthText = allStrengths.length > 0
+      ? `私の強みは、DP分析に基づく「${allStrengths.join('」や「')}」です。これまでの学びを通じて自身の強みを磨き、主体的に課題へ取り組む姿勢を培ってきました。`
+      : `私の強みは、自発的な行動力と継続的な学修意欲です。これまでの学びを通じて自身の資質を磨き、主体的に取り組む姿勢を培ってきました。`;
 
     let cGradSentences = [];
-    if (cWeakDescs.length > 0) {
-      cGradSentences.push(`「${cWeakDescs.join('」や「')}」の能力克服に努めつつ`);
-    }
+    if (cWeakDescs.length > 0) cGradSentences.push(`「${cWeakDescs.join('」や「')}」の能力向上・克服を図りつつ`);
     let cActions = [];
-    if (c.step4Curriculum) cActions.push(`授業においては特に${c.step4Curriculum}`);
-    if (c.step4External) cActions.push(`学外での${c.step4External}`);
-    if (cActions.length > 0) {
-      cGradSentences.push(`${cActions.join('や')}に積極的に挑戦していきます`);
-    }
-    let cGradText = `卒業までに、${cGradSentences.join('、')}。学びと経験を積み重ねることで、専門知識と実践力を備えた社会で活躍できる人材を目指します。`;
+    if (c.step4Curriculum) cActions.push(`授業・学事での${c.step4Curriculum}`);
+    if (c.step4Certification) cActions.push(`資格・検定における${c.step4Certification}`);
+    if (c.step4External) cActions.push(`課外活動での${c.step4External}`);
+    if (cActions.length > 0) cGradSentences.push(`${cActions.join('や')}に積極的に挑みます`);
 
+    let cGradText = `卒業までに、${cGradSentences.join('、')}。専門知識と実践力を備えた理想的な姿で卒業し、社会で活躍できる人材を目指します。`;
     let cReasonClean = formatReasonText(c.step2);
     let cJobText = `卒業後は${c.step1}の分野で活躍することを希望しています。${cReasonClean}という強い思いがあるため、この目標の実現に向けて着実にステップアップしていきます。`;
 
     const careerOutput = `【キャリアビジョン】\n\n1. 今の自分の長所（能力・経験・性格など）：\n${cStrengthText}\n\n2. 卒業時の姿（理想とする人物像・進路意欲）：\n${cGradText}\n\n3. 将来希望する業種・職種：\n${cJobText}`;
 
     // --- 2. 今学期の目標文章作成 ---
-    const tStrDescs = (t.strSelected || []).map(getDPDescription);
     const tWeakDescs = (t.weakSelected || []).map(getDPDescription);
+    let tAcadText = `今学期（${t.targetTerm}）は、${t.step1}の達成を目指します。授業・学事において${t.step4Curriculum}に注力し、優れた評価を目指して学業成績の向上に努めます。`;
 
-    let tAcadText = `今学期（${t.targetTerm}）は、${t.step1}の達成を目指します。そのために授業においては特に${t.step4Curriculum}に注力し、優れた評価を目指して学業成績の向上に努めます。`;
+    let tCertText = t.step4Certification 
+      ? `資格・検定・コンクール等において「${t.step4Certification}」に取り組み、専門的なスキルや知識の修得を図り、将来のキャリアに向けた実践力を養います。`
+      : `資格取得や語学・課外活動に積極的に挑戦し、将来のキャリアに向けた実践的スキルを養います。`;
 
-    let tCareerAct = t.step4External || '資格取得や自主的な課題制作・課外活動';
-    let tCareerDP = tStrDescs.length > 0 ? `強みである「${tStrDescs.join('」や「')}」を高めながら、` : '';
-    let tCareerText = `授業外では、${tCareerDP}${tCareerAct}に積極的に取り組むことで専門的なスキルや知識の修得を図り、将来のキャリアに向けた実践力を養います。`;
+    let tExtAct = t.step4External ? `課外活動・ボランティアとして${t.step4External}に主体的に取り組みます。` : '課外活動や自己管理の意識を高く持って行動します。';
+    let tCriteriaText = t.step4Criteria ? `また、「${t.step4Criteria}」を目標達成の目安として自律的に行動し、社会性や自己管理能力を高めていきます。` : '';
+    let tExtDP = tWeakDescs.length > 0 ? `なお、日々の活動を通じて「${tWeakDescs.join('」や「')}」の克服を意識していきます。` : '';
 
-    let tExtAct = t.step4Criteria || t.step2 || '日々の目標管理と学習成果の定着';
-    let tExtDP = tWeakDescs.length > 0 ? `「${tWeakDescs.join('」や「')}」の克服を意識し、` : '';
-    let tExtText = `学内外での取り組みを通じて${tExtDP}「${tExtAct}」を達成基準として自律的に行動し、社会性や自己管理能力を高めていきます。`;
+    let tExtFullText = `${tExtAct}${tCriteriaText ? ' ' + tCriteriaText : ''}${tExtDP ? ' ' + tExtDP : ''}`;
 
-    const termOutput = `【今学期の目標（${t.targetTerm}）】\n\n1. 学業（成績）：\n${tAcadText}\n\n2. キャリア形成（資格・語学試験・課外活動など）：\n${tCareerText}\n\n3. 学外での活動（ボランティア・アルバイト・自己管理）：\n${tExtText}`;
+    const termOutput = `【今学期の目標（${t.targetTerm}）】\n\n1. 学業（成績）：\n${tAcadText}\n\n2. キャリア形成（資格・語学試験・課外活動など）：\n${tCertText}\n\n3. 学外での活動（ボランティア・アルバイト・自己管理）：\n${tExtFullText}`;
 
     const fullGeneratedText = `${careerOutput}\n\n=========================================\n\n${termOutput}`;
     document.getElementById('outputText').value = fullGeneratedText;
@@ -1657,6 +1679,190 @@
     alert('「キャリアビジョン」と「今学期の目標」をクリップボードにコピーしました！');
   }
 
+  // --- PDF出力（ディプロマサプリメント機能） ---
+  async function exportAnalysisPDF() {
+    const generatedText = document.getElementById('outputText').value;
+    if (!generatedText) {
+      alert('PDFを出力する前に「✨ 入力内容から文章を自動作成」を実行してください。');
+      return;
+    }
+
+    const deptSelect = document.getElementById('department-select');
+    const deptName = deptSelect.options[deptSelect.selectedIndex].text;
+    const { totalCredits, gpaVal } = calculateTotalEarnedCreditsAndGPA();
+
+    // 入力済み科目リストの抽出
+    let nameIdx = rawData.header.indexOf('科目名称');
+    if (nameIdx === -1) nameIdx = rawData.header.indexOf('授業科目の名称');
+    let unitsIdx = rawData.header.indexOf('単位数');
+    if (unitsIdx === -1) unitsIdx = rawData.header.indexOf('単位');
+
+    const enteredSubjects = [];
+    rawData.rows.forEach(row => {
+      const subjectName = nameIdx !== -1 ? row[nameIdx] : '';
+      const credits = (unitsIdx !== -1 && row[unitsIdx]) ? (parseFloat(row[unitsIdx]) || 1) : 1;
+      const scoreVal = userScores[subjectName];
+      if (scoreVal !== undefined && scoreVal !== '' && scoreVal !== null) {
+        enteredSubjects.push({ name: subjectName, credits: credits, score: scoreVal });
+      }
+    });
+
+    // 一時的なPDF生成DOMエレメントを作成
+    const pdfContainer = document.createElement('div');
+    pdfContainer.id = 'pdf-export-container';
+    pdfContainer.style.cssText = `
+      width: 790px;
+      padding: 24px 28px;
+      background: #ffffff;
+      color: #1e293b;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-size: 11px;
+      line-height: 1.4;
+      box-sizing: border-box;
+    `;
+
+    const currentDate = new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    pdfContainer.innerHTML = `
+      <div style="border-bottom: 2.5px solid #1e3a8a; padding-bottom: 8px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: flex-end;">
+        <div>
+          <h1 style="font-size: 18px; margin: 0; color: #1e3a8a; font-weight: bold;">学修分析・PDCAサプリメントシート</h1>
+          <div style="font-size: 11px; color: #475569; margin-top: 2px;">所属学科：${deptName}</div>
+        </div>
+        <div style="font-size: 10px; color: #64748b; text-align: right;">発行日：${currentDate}</div>
+      </div>
+
+      <!-- 学修成果サマリー -->
+      <div style="display: flex; gap: 12px; margin-bottom: 12px;">
+        <div style="flex: 1; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 8px; text-align: center;">
+          <div style="font-size: 10px; color: #1e3a8a; font-weight: bold;">総修得単位数</div>
+          <div style="font-size: 18px; font-weight: bold; color: #1e3a8a; margin-top: 2px;">${totalCredits} <span style="font-size: 10px;">単位</span></div>
+        </div>
+        <div style="flex: 1; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 6px; padding: 8px; text-align: center;">
+          <div style="font-size: 10px; color: #047857; font-weight: bold;">GPA平均</div>
+          <div style="font-size: 18px; font-weight: bold; color: #047857; margin-top: 2px;">${gpaVal}</div>
+        </div>
+      </div>
+
+      <!-- DP能力レーダーチャート（合算pt ＆ 割合% 横並び） -->
+      <div style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; margin-bottom: 12px; background: #fafafa;">
+        <div style="font-size: 11px; font-weight: bold; color: #0f172a; margin-bottom: 6px;">■ ディプロマ・ポリシー（DP）獲得能力分析</div>
+        <div style="display: flex; gap: 10px; justify-content: space-between; align-items: center;">
+          <div style="flex: 1; text-align: center;">
+            <div style="font-size: 9px; font-weight: bold; color: #475569; margin-bottom: 4px;">獲得DPポイント（合算pt）</div>
+            <div style="height: 180px; position: relative;"><canvas id="pdfChartPt"></canvas></div>
+          </div>
+          <div style="flex: 1; text-align: center;">
+            <div style="font-size: 9px; font-weight: bold; color: #475569; margin-bottom: 4px;">DP達成割合（%）</div>
+            <div style="height: 180px; position: relative;"><canvas id="pdfChartPct"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- キャリアビジョン ＆ 今学期の目標 -->
+      <div style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; margin-bottom: 12px; background: #ffffff;">
+        <div style="font-size: 11px; font-weight: bold; color: #0f172a; margin-bottom: 6px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">■ 学修計画・目標分析文章</div>
+        <div style="white-space: pre-wrap; font-size: 10px; line-height: 1.45; color: #334155;">${generatedText}</div>
+      </div>
+
+      <!-- 履修成績一覧 -->
+      <div style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; background: #ffffff;">
+        <div style="font-size: 11px; font-weight: bold; color: #0f172a; margin-bottom: 6px;">■ 入力済み履修科目・評価一覧（計 ${enteredSubjects.length} 科目）</div>
+        ${enteredSubjects.length > 0 ? `
+          <table style="width: 100%; border-collapse: collapse; font-size: 9.5px; text-align: left;">
+            <thead>
+              <tr style="background: #f1f5f9; border-bottom: 1px solid #cbd5e1;">
+                <th style="padding: 4px; border: 1px solid #cbd5e1;">科目名称</th>
+                <th style="padding: 4px; border: 1px solid #cbd5e1; text-align: center; width: 50px;">単位</th>
+                <th style="padding: 4px; border: 1px solid #cbd5e1; text-align: center; width: 60px;">点数</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${enteredSubjects.map(s => `
+                <tr style="border-bottom: 1px solid #e2e8f0;">
+                  <td style="padding: 3px 4px; border: 1px solid #e2e8f0;">${s.name}</td>
+                  <td style="padding: 3px 4px; border: 1px solid #e2e8f0; text-align: center;">${s.credits}</td>
+                  <td style="padding: 3px 4px; border: 1px solid #e2e8f0; text-align: center; font-weight: bold;">${s.score} 点</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        ` : `<div style="font-size: 9.5px; color: #94a3b8;">入力済みの成績データがありません</div>`}
+      </div>
+    `;
+
+    document.body.appendChild(pdfContainer);
+
+    // チャートのレンダリング (画面外/DOM配置後に描画)
+    const ctxPt = document.getElementById('pdfChartPt').getContext('2d');
+    const ctxPct = document.getElementById('pdfChartPct').getContext('2d');
+
+    const percentData = currentDPTotals.map((val, idx) => {
+      const maxVal = currentDPMaxTotals[idx] || 0;
+      return maxVal > 0 ? (val / maxVal) * 100 : 0;
+    });
+
+    new Chart(ctxPt, {
+      type: 'radar',
+      data: {
+        labels: currentDPNames.map(n => getDPDescription(n)),
+        datasets: [{
+          data: currentDPTotals,
+          backgroundColor: 'rgba(30, 58, 138, 0.25)',
+          borderColor: 'rgba(30, 58, 138, 1)',
+          borderWidth: 1.5,
+          pointRadius: 2
+        }]
+      },
+      options: {
+        animation: false,
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: { r: { beginAtZero: true, ticks: { display: false }, pointLabels: { font: { size: 7.5 } } } },
+        plugins: { legend: { display: false } }
+      }
+    });
+
+    new Chart(ctxPct, {
+      type: 'radar',
+      data: {
+        labels: currentDPNames.map(n => getDPDescription(n)),
+        datasets: [{
+          data: percentData,
+          backgroundColor: 'rgba(5, 150, 105, 0.25)',
+          borderColor: 'rgba(5, 150, 105, 1)',
+          borderWidth: 1.5,
+          pointRadius: 2
+        }]
+      },
+      options: {
+        animation: false,
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: { r: { beginAtZero: true, max: 100, ticks: { display: false }, pointLabels: { font: { size: 7.5 } } } },
+        plugins: { legend: { display: false } }
+      }
+    });
+
+    // html2pdf によるPDF変換＆ダウンロード
+    const opt = {
+      margin: [8, 8, 8, 8],
+      filename: `学修分析サプリメントシート_${deptName}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, logging: false },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    try {
+      await html2pdf().set(opt).from(pdfContainer).save();
+    } catch (err) {
+      console.error('PDF出力エラー:', err);
+      alert('PDF出力に失敗しました。');
+    } finally {
+      document.body.removeChild(pdfContainer);
+    }
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
     const deptSelect = document.getElementById('department-select');
     const yearSelect = document.getElementById('year-select');
@@ -1675,7 +1881,7 @@
       updateRecommendations();
     });
 
-    ['step1-input', 'step2-input', 'step4-curriculum', 'step4-external', 'step4-criteria'].forEach(id => {
+    ['step1-input', 'step2-input', 'step4-curriculum', 'step4-certification', 'step4-external', 'step4-criteria'].forEach(id => {
       const el = document.getElementById(id);
       if (el) {
         el.addEventListener('input', () => {
