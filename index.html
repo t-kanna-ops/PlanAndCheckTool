@@ -938,19 +938,49 @@
       let category2Idx = header.indexOf('科目区分2');
       if (category2Idx === -1) category2Idx = header.indexOf('科目区分');
 
-      // 教養CSVの行を学科CSVのヘッダー順にアライメント（DP1などのプレフィックスマッチで柔軟に対応）
+      // 教養CSVの小項目（DP1-1, DP1-2...）を学科CSVの大項目（DP1, DP2...）に統合マッピング
       const processedCommonRows = commonParsed.rows.map(row => {
         const alignedRow = header.map(colName => {
           let idx = commonParsed.header.indexOf(colName);
-          if (idx === -1 && colName.includes('DP')) {
+          if (idx !== -1) {
+            return row[idx] || '';
+          }
+
+          if (colName.includes('DP')) {
             const dpMatch = colName.match(/DP\d+/i);
             if (dpMatch) {
-              const dpCode = dpMatch[0].toUpperCase();
-              idx = commonParsed.header.findIndex(h => h.toUpperCase().includes(dpCode));
+              const dpCode = dpMatch[0].toUpperCase(); // 例: "DP1"
+              
+              // 教養CSVの全ヘッダーから "DP1-" または "DP1:" 等で始まる列を探す
+              const matchingIndices = [];
+              commonParsed.header.forEach((h, hIdx) => {
+                const upperH = h.toUpperCase();
+                if (upperH === dpCode || upperH.startsWith(dpCode + '-') || upperH.startsWith(dpCode + '：') || upperH.startsWith(dpCode + ':')) {
+                  matchingIndices.push(hIdx);
+                }
+              });
+
+              if (matchingIndices.length > 0) {
+                let hasDoubleCircle = false;
+                let hasCircle = false;
+                for (const mIdx of matchingIndices) {
+                  const cellVal = row[mIdx] ? row[mIdx].trim() : '';
+                  if (cellVal.includes('◎')) {
+                    hasDoubleCircle = true;
+                    break;
+                  } else if (cellVal.includes('○') || cellVal.includes('◯') || cellVal.includes('〇')) {
+                    hasCircle = true;
+                  }
+                }
+                if (hasDoubleCircle) return '◎';
+                if (hasCircle) return '○';
+                return '';
+              }
             }
           }
-          return (idx !== -1 && idx < row.length) ? row[idx] : '';
+          return '';
         });
+
         if (category2Idx !== -1) alignedRow[category2Idx] = '教養科目';
         return alignedRow;
       });
@@ -1019,7 +1049,6 @@
     });
   }
 
-  // 分子・分母を常に同期して正確に計算・描画する統一ロジック
   function calculateDPsAndSummary() {
     const checkedCategories = new Set(
       Array.from(document.querySelectorAll('.cat-cb:checked')).map(cb => cb.value)
@@ -1043,7 +1072,6 @@
 
     rawData.rows.forEach(row => {
       const category2 = category2Idx !== -1 ? row[category2Idx] : '';
-      // 選択されているカテゴリ（教養含む）のみを分母・分子の集計対象に適用
       if (checkedCategories.has(category2)) {
         const subjectName = nameIdx !== -1 ? row[nameIdx] : '';
         const credits = (unitsIdx !== -1 && row[unitsIdx]) ? (parseFloat(row[unitsIdx]) || 1) : 1;
@@ -1053,12 +1081,10 @@
           const cleanCell = row[idx] ? row[idx].trim() : '';
           let basePts = 0;
           if (cleanCell.includes('◎')) basePts = 2;
-          else if (cleanCell.includes('○') || cleanCell.includes('〇') || cleanCell.includes('◯')) basePts = 1;
+          else if (cleanCell.includes('○') || cleanCell.includes('◯') || cleanCell.includes('〇')) basePts = 1;
 
-          // 分母（最大可能pt）
           dpMaxTotals[idx] += basePts * credits;
 
-          // 分子（獲得pt）
           if (weight > 0) {
             dpTotals[idx] += basePts * credits * weight;
           }
@@ -1070,7 +1096,6 @@
     currentDPTotals = dpColIndices.map(idx => dpTotals[idx]);
     currentDPMaxTotals = dpColIndices.map(idx => dpMaxTotals[idx]);
 
-    // DPカードの更新
     dpColIndices.forEach((idx, i) => {
       const cardValEl = document.getElementById(`card-dp-${idx}`);
       if (cardValEl) cardValEl.innerHTML = `${currentDPTotals[i].toFixed(1)} <span style="font-size:0.65rem;">pt</span>`;
@@ -1153,7 +1178,7 @@
           if (idx === nameIdx) td.classList.add('col-subject');
 
           if (cleanCell.includes('◎')) td.innerHTML = '<span class="mark-target">◎</span>';
-          else if (cleanCell.includes('○') || cleanCell.includes('〇') || cleanCell.includes('◯')) td.innerHTML = '<span class="mark-related">○</span>';
+          else if (cleanCell.includes('○') || cleanCell.includes('◯') || cleanCell.includes('〇')) td.innerHTML = '<span class="mark-related">○</span>';
           else td.textContent = cell;
 
           tr.appendChild(td);
@@ -1186,7 +1211,6 @@
 
     countDiv.textContent = `表示件数: ${visibleCount} 件`;
 
-    // DPカードの枠組生成
     dpColIndices.forEach(idx => {
       const dpName = rawData.header[idx];
       const card = document.createElement('div');
@@ -1198,7 +1222,6 @@
       dpCardsContainer.appendChild(card);
     });
 
-    // 集計実行
     calculateDPsAndSummary();
   }
 
