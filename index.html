@@ -634,11 +634,11 @@
       <label style="font-size:0.95rem; color:var(--primary);">自分自身の強み・課題（DP順位順）</label>
       
       <div class="form-group" style="margin-top:8px;">
-        <label>さらに伸ばしたい能力 (最大3つ) <span style="font-weight:normal; font-size:0.75rem; color:#64748b;">[獲得pt順：赤1-3位, オレンジ4-7位]</span></label>
+        <label>さらに伸ばしたい「強み」 (最大3つ) <span style="font-weight:normal; font-size:0.75rem; color:#64748b;">[獲得pt順：赤1-3位, オレンジ4-7位]</span></label>
         <div id="dpStrengthsContainer" class="dp-grid"></div>
       </div>
       <div class="form-group">
-        <label>克服したい・補いたい能力 (最大3つ) <span style="font-weight:normal; font-size:0.75rem; color:#64748b;">[ワースト順：青1-3位, 緑4-7位]</span></label>
+        <label>克服したい・補いたい「伸びしろ」 (最大3つ) <span style="font-weight:normal; font-size:0.75rem; color:#64748b;">[伸びしろ順：青1-3位, 緑4-7位]</span></label>
         <div id="dpWeaknessesContainer" class="dp-grid"></div>
       </div>
     </div>
@@ -1353,7 +1353,7 @@
       strBox.appendChild(createDPCheckbox(item.dpName, 'str', strClass, strBadge));
     });
 
-    // 2. 弱み（達成割合が低い順＝pctRank順：ワースト順）にソートして出力
+    // 2. 弱み（達成割合が低い順＝pctRank順：伸びしろ順）にソートして出力
     const weakSorted = [...dpItems].sort((a, b) => a.pctRank - b.pctRank);
     weakSorted.forEach(item => {
       let weakClass = '', weakBadge = '';
