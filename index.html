@@ -519,11 +519,11 @@
         <div class="checkbox-group" id="category-checkboxes-container"></div>
       </div>
       <div class="form-group no-margin" style="grid-column: 1 / -1;">
-        <label>重視するDP絞り込み <span style="font-weight:normal; font-size:0.75rem; color:#dc2626;">(チェックしたDPが <span class="mark-target">◎</span> の科目)</span></label>
+        <label>重視するDP絞り込み <span style="font-weight:normal; font-size:0.75rem; color:#dc2626;">(選択したすべてが <span class="mark-target">◎</span> の科目)</span></label>
         <div class="checkbox-group" id="dp-target-checkboxes-container"></div>
       </div>
       <div class="form-group no-margin" style="grid-column: 1 / -1;">
-        <label>学習できるDP絞り込み <span style="font-weight:normal; font-size:0.75rem; color:#2563eb;">(チェックしたDPが <span class="mark-related">○</span> または <span class="mark-target">◎</span> の科目)</span></label>
+        <label>学習できるDP絞り込み <span style="font-weight:normal; font-size:0.75rem; color:#2563eb;">(選択したすべてが <span class="mark-related">○</span> または <span class="mark-target">◎</span> の科目)</span></label>
         <div class="checkbox-group" id="dp-learn-checkboxes-container"></div>
       </div>
     </div>
@@ -710,7 +710,7 @@
       </div>
     </div>
 
-    <!-- 推奨科目セクション（列改修：操作 / マッチ度 / 主なDP / 科目名 / 配当年次） -->
+    <!-- 推奨科目セクション -->
     <div style="background:#f8fafc; padding:12px; border-radius:8px; border:1px solid var(--border); margin-bottom:16px;">
       <h3 style="margin:0 0 8px 0; font-size:0.95rem; color:var(--primary);">選択DPに基づくおすすめ提案科目</h3>
       <div class="table-wrapper">
@@ -1045,7 +1045,6 @@
     });
   }
 
-  // 「重視するDP」「学習できるDP」の絞り込み用チェックボックスを生成
   function updateDPFilterCheckboxes() {
     const targetContainer = document.getElementById('dp-target-checkboxes-container');
     const learnContainer = document.getElementById('dp-learn-checkboxes-container');
@@ -1063,13 +1062,11 @@
       const dpFullName = rawData.header[idx];
       const dpDesc = getDPDescription(dpFullName);
 
-      // 重視するDP用
       const targetLbl = document.createElement('label');
       targetLbl.className = 'checkbox-label';
       targetLbl.innerHTML = `<input type="checkbox" class="dp-target-cb" value="${idx}"><span>${dpDesc}</span>`;
       targetContainer.appendChild(targetLbl);
 
-      // 学習できるDP用
       const learnLbl = document.createElement('label');
       learnLbl.className = 'checkbox-label';
       learnLbl.innerHTML = `<input type="checkbox" class="dp-learn-cb" value="${idx}"><span>${dpDesc}</span>`;
@@ -1204,19 +1201,19 @@
       const matchYear = (yearFilter === 'all' || academicYear.includes(yearFilter));
       const matchSearch = (!searchFilter || subjectName.toLowerCase().includes(searchFilter));
 
-      // 重視するDP判定（選択したDPのいずれかに◎が含まれているか）
+      // 重視するDP判定：AND条件（選択したすべてのDPで◎が含まれているか）
       let matchTargetDP = true;
       if (checkedTargetDPs.length > 0) {
-        matchTargetDP = checkedTargetDPs.some(idx => {
+        matchTargetDP = checkedTargetDPs.every(idx => {
           const cell = row[idx] ? row[idx].trim() : '';
           return cell.includes('◎');
         });
       }
 
-      // 学習できるDP判定（選択したDPのいずれかに◎または○が含まれているか）
+      // 学習できるDP判定：AND条件（選択したすべてのDPで◎または○が含まれているか）
       let matchLearnDP = true;
       if (checkedLearnDPs.length > 0) {
-        matchLearnDP = checkedLearnDPs.some(idx => {
+        matchLearnDP = checkedLearnDPs.every(idx => {
           const cell = row[idx] ? row[idx].trim() : '';
           return cell.includes('◎') || cell.includes('○') || cell.includes('◯') || cell.includes('〇');
         });
@@ -1384,7 +1381,6 @@
     return { ptsRankMap, pctRankMap };
   }
 
-  // Step 3 の DP 表示をランキング順にソートして描画
   function renderDPCheckboxesInPlan() {
     const strBox = document.getElementById('dpStrengthsContainer');
     const weakBox = document.getElementById('dpWeaknessesContainer');
@@ -1408,7 +1404,6 @@
       };
     });
 
-    // 1. 強み（獲得ptが高い順＝ptsRank順）にソートして出力
     const strSorted = [...dpItems].sort((a, b) => a.ptsRank - b.ptsRank);
     strSorted.forEach(item => {
       let strClass = '', strBadge = '';
@@ -1422,7 +1417,6 @@
       strBox.appendChild(createDPCheckbox(item.dpName, 'str', strClass, strBadge));
     });
 
-    // 2. 弱み（達成割合が低い順＝pctRank順：ワースト順）にソートして出力
     const weakSorted = [...dpItems].sort((a, b) => a.pctRank - b.pctRank);
     weakSorted.forEach(item => {
       let weakClass = '', weakBadge = '';
@@ -1593,7 +1587,6 @@
     if (anchor) anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  // おすすめ提案科目の更新（主なDPの色バッジ対応）
   function updateRecommendations() {
     const activeData = planFormData[currentSubMode];
     const strSelected = activeData.strSelected || [];
@@ -1644,7 +1637,6 @@
     renderRecommendationsTable(10);
   }
 
-  // 提案の理由となっているDPをランク別カラーバッジ表示
   function getMatchedDPBadgesHtml(matchedDPs) {
     const { ptsRankMap, pctRankMap } = getDPRanks();
 
@@ -1867,7 +1859,6 @@
 
     const labels = currentDPNames.map(n => getDPDescription(n));
 
-    // チャート1: 合算pt
     const chartPt = new Chart(ctxPt, {
       type: 'radar',
       data: {
@@ -1888,7 +1879,6 @@
       }
     });
 
-    // チャート2: 達成割合%
     const chartPct = new Chart(ctxPct, {
       type: 'radar',
       data: {
