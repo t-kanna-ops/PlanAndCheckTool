@@ -499,7 +499,7 @@
     </div>
   </div>
 
-  <!-- タブ切替 (文字数調整) -->
+  <!-- タブ切替 -->
   <div class="nav-tabs">
     <button class="tab-btn active" onclick="switchTab('check')">📝 Check (成績)</button>
     <button class="tab-btn" onclick="switchTab('plan')">🎯 Plan (目標)</button>
@@ -518,6 +518,14 @@
         <label>科目区分絞り込み</label>
         <div class="checkbox-group" id="category-checkboxes-container"></div>
       </div>
+      <div class="form-group no-margin" style="grid-column: 1 / -1;">
+        <label>重視するDP絞り込み <span style="font-weight:normal; font-size:0.75rem; color:#dc2626;">(チェックしたDPが <span class="mark-target">◎</span> の科目)</span></label>
+        <div class="checkbox-group" id="dp-target-checkboxes-container"></div>
+      </div>
+      <div class="form-group no-margin" style="grid-column: 1 / -1;">
+        <label>学習できるDP絞り込み <span style="font-weight:normal; font-size:0.75rem; color:#2563eb;">(チェックしたDPが <span class="mark-related">○</span> または <span class="mark-target">◎</span> の科目)</span></label>
+        <div class="checkbox-group" id="dp-learn-checkboxes-container"></div>
+      </div>
     </div>
 
     <h2><span class="step-badge">Step 2</span> 履修修得（点数）入力</h2>
@@ -530,11 +538,11 @@
     <!-- 氏名・学籍番号入力エリア -->
     <div class="controls-grid" style="margin-bottom: 10px;">
       <div class="form-group no-margin">
-        <label for="student-id">学籍番号※任意</label>
+        <label for="student-id">学籍番号</label>
         <input type="text" id="student-id" placeholder="例：2200000">
       </div>
       <div class="form-group no-margin">
-        <label for="student-name">氏名※任意</label>
+        <label for="student-name">氏名</label>
         <input type="text" id="student-name" placeholder="例：尚美 太郎">
       </div>
     </div>
@@ -600,7 +608,7 @@
     </div>
 
     <div class="notice" id="step-intro-notice">
-      💡 <b>キャリアビジョンと今学期の目標の両方を入力してください。</b> 入力完了後に下のボタンを押すと入力内容から文章を生成します。
+      💡 <b>キャリアビジョンと今学期の目標の両方を入力してください。</b> 入力完了後に下のボタンを押すと高クオリティな文章が一括生成されます。
     </div>
 
     <!-- バリデーションエラーメッセージ表示エリア -->
@@ -614,7 +622,7 @@
       <span class="chip-label">💡 学科のヒントキーワード（ワンタップで入力）:</span>
       <div class="hint-chip-container" id="step1-chips"></div>
 
-      <input type="text" id="step1-input" placeholder="例：映像制作、IT分野、音楽ビジネス、演奏家、作曲家、、、">
+      <input type="text" id="step1-input" placeholder="例：映像制作に関わる仕事がしたい、IT分野に興味がある">
     </div>
 
     <!-- STEP 2 -->
@@ -625,7 +633,7 @@
       <span class="chip-label">💡 きっかけのヒント:</span>
       <div class="hint-chip-container" id="step2-chips"></div>
 
-      <textarea id="step2-input" rows="2" placeholder="例：小さい頃から音楽が好きで、人を感動させる表現に憧れている。ソーシャルメディアに興味があり、可能性を感じている。など"></textarea>
+      <textarea id="step2-input" rows="2" placeholder="例：小さい頃から映画が好きで、人を感動させる表現に憧れているから"></textarea>
     </div>
 
     <!-- STEP 3（ランキング順に表示） -->
@@ -634,11 +642,11 @@
       <label style="font-size:0.95rem; color:var(--primary);">自分自身の強み・課題（DP順位順）</label>
       
       <div class="form-group" style="margin-top:8px;">
-        <label>さらに伸ばしたい「強み」 (最大3つ) <span style="font-weight:normal; font-size:0.75rem; color:#64748b;">[獲得pt順：赤1-3位, オレンジ4-7位]</span></label>
+        <label>さらに伸ばしたい能力 (最大3つ) <span style="font-weight:normal; font-size:0.75rem; color:#64748b;">[獲得pt順：赤1-3位, オレンジ4-7位]</span></label>
         <div id="dpStrengthsContainer" class="dp-grid"></div>
       </div>
       <div class="form-group">
-        <label>克服したい・補いたい「伸びしろ」 (最大3つ) <span style="font-weight:normal; font-size:0.75rem; color:#64748b;">[伸びしろ順：青1-3位, 緑4-7位]</span></label>
+        <label>克服したい・補いたい能力 (最大3つ) <span style="font-weight:normal; font-size:0.75rem; color:#64748b;">[ワースト順：青1-3位, 緑4-7位]</span></label>
         <div id="dpWeaknessesContainer" class="dp-grid"></div>
       </div>
     </div>
@@ -652,14 +660,14 @@
       <div class="form-group" id="targetTermGroup" style="margin-top:8px; display:none;">
         <label for="targetTermSelect">目標対象の年次・学期</label>
         <select id="targetTermSelect" style="max-width: 180px;">
-          <option value="1年春学期">1年 春学期</option>
-          <option value="1年秋学期">1年 秋学期</option>
-          <option value="2年春学期">2年 春学期</option>
-          <option value="2年秋学期">2年 秋学期</option>
-          <option value="3年春学期">3年 春学期</option>
-          <option value="3年秋学期">3年 秋学期</option>
-          <option value="4年春学期">4年 春学期</option>
-          <option value="4年秋学期">4年 秋学期</option>
+          <option value="1年前期">1年 前期</option>
+          <option value="1年後期">1年 後期</option>
+          <option value="2年前期">2年 前期</option>
+          <option value="2年後期">2年 後期</option>
+          <option value="3年前期">3年 前期</option>
+          <option value="3年後期">3年 後期</option>
+          <option value="4年前期">4年 前期</option>
+          <option value="4年後期">4年 後期</option>
         </select>
       </div>
 
@@ -704,7 +712,7 @@
 
     <!-- 推奨科目セクション（列改修：操作 / マッチ度 / 主なDP / 科目名 / 配当年次） -->
     <div style="background:#f8fafc; padding:12px; border-radius:8px; border:1px solid var(--border); margin-bottom:16px;">
-      <h3 style="margin:0 0 8px 0; font-size:0.95rem; color:var(--primary);">選択DPに基づくおすすめ提案科目（分野・領域の区別はありません。あくまでもDPのみに焦点を当てた提案ですので、参考程度に。）</h3>
+      <h3 style="margin:0 0 8px 0; font-size:0.95rem; color:var(--primary);">選択DPに基づくおすすめ提案科目</h3>
       <div class="table-wrapper">
         <table>
           <thead>
@@ -750,7 +758,7 @@
 
 <script>
   const COMMON_CSV_FILE = 'art_expression05.csv';
-  const GAS_LOG_URL = "https://script.google.com/macros/s/AKfycbxhnAuLSDC9RNJVMchz43usXKjWeVHhRIlOvi3EdKZVIKStYaDGGx_61-4wWSkbBvfT/exec";
+  const GAS_LOG_URL = "https://script.google.com/macros/s/【ここに取得したWebアプリURLを貼り付け】/exec";
 
   let rawData = { header: [], rows: [] };
   const userScores = {}; 
@@ -779,7 +787,7 @@
       step2: '',
       strSelected: [],
       weakSelected: [],
-      targetTerm: '1年春学期',
+      targetTerm: '1年前期',
       step4Curriculum: '',
       step4Certification: '',
       step4External: '',
@@ -801,7 +809,7 @@
     'art_expression02.csv': {
       career: {
         step1: ['演奏家・ソリスト', '音楽指導者', '舞台ディレクター', 'アートイベントプロデューサー', '作曲家・サウンドデザイナー'],
-        step2: ['自分の演奏で人の心を動かしたい', '音楽と他ジャンルを融合した表現をしたい', '新しい表現を開拓したい']
+        step2: ['自分の演奏で人の心を動かしたいから', '音楽と他ジャンルを融合した舞台を作りたいから', '表現技法を深く探求したいから']
       },
       term: {
         step1: ['ソロ演奏技法の探求', '作曲・編曲演習の実施', '音響エンジニアリングの実習', 'アンサンブル・舞台表現の練習', '演奏会・創作活動の企画'],
@@ -975,6 +983,7 @@
       rawData = { header: header, rows: [...deptParsed.rows, ...processedCommonRows] };
 
       updateCategoryCheckboxes();
+      updateDPFilterCheckboxes();
       renderTable();
       renderDPCheckboxesInPlan();
       updateStepHints();
@@ -1033,6 +1042,45 @@
 
     container.querySelectorAll('.cat-cb').forEach(cb => {
       cb.addEventListener('change', () => { renderTable(); });
+    });
+  }
+
+  // 「重視するDP」「学習できるDP」の絞り込み用チェックボックスを生成
+  function updateDPFilterCheckboxes() {
+    const targetContainer = document.getElementById('dp-target-checkboxes-container');
+    const learnContainer = document.getElementById('dp-learn-checkboxes-container');
+    if (!targetContainer || !learnContainer) return;
+
+    targetContainer.innerHTML = '';
+    learnContainer.innerHTML = '';
+
+    const dpColIndices = [];
+    rawData.header.forEach((headerName, idx) => {
+      if (headerName.includes('DP')) dpColIndices.push(idx);
+    });
+
+    dpColIndices.forEach(idx => {
+      const dpFullName = rawData.header[idx];
+      const dpDesc = getDPDescription(dpFullName);
+
+      // 重視するDP用
+      const targetLbl = document.createElement('label');
+      targetLbl.className = 'checkbox-label';
+      targetLbl.innerHTML = `<input type="checkbox" class="dp-target-cb" value="${idx}"><span>${dpDesc}</span>`;
+      targetContainer.appendChild(targetLbl);
+
+      // 学習できるDP用
+      const learnLbl = document.createElement('label');
+      learnLbl.className = 'checkbox-label';
+      learnLbl.innerHTML = `<input type="checkbox" class="dp-learn-cb" value="${idx}"><span>${dpDesc}</span>`;
+      learnContainer.appendChild(learnLbl);
+    });
+
+    targetContainer.querySelectorAll('.dp-target-cb').forEach(cb => {
+      cb.addEventListener('change', renderTable);
+    });
+    learnContainer.querySelectorAll('.dp-learn-cb').forEach(cb => {
+      cb.addEventListener('change', renderTable);
     });
   }
 
@@ -1100,6 +1148,9 @@
       Array.from(document.querySelectorAll('.cat-cb:checked')).map(cb => cb.value)
     );
 
+    const checkedTargetDPs = Array.from(document.querySelectorAll('.dp-target-cb:checked')).map(cb => Number(cb.value));
+    const checkedLearnDPs = Array.from(document.querySelectorAll('.dp-learn-cb:checked')).map(cb => Number(cb.value));
+
     const tHead = document.getElementById('table-head');
     const tBody = document.getElementById('table-body');
     const countDiv = document.getElementById('subject-count');
@@ -1153,7 +1204,25 @@
       const matchYear = (yearFilter === 'all' || academicYear.includes(yearFilter));
       const matchSearch = (!searchFilter || subjectName.toLowerCase().includes(searchFilter));
 
-      if (matchCategory && matchYear && matchSearch) {
+      // 重視するDP判定（選択したDPのいずれかに◎が含まれているか）
+      let matchTargetDP = true;
+      if (checkedTargetDPs.length > 0) {
+        matchTargetDP = checkedTargetDPs.some(idx => {
+          const cell = row[idx] ? row[idx].trim() : '';
+          return cell.includes('◎');
+        });
+      }
+
+      // 学習できるDP判定（選択したDPのいずれかに◎または○が含まれているか）
+      let matchLearnDP = true;
+      if (checkedLearnDPs.length > 0) {
+        matchLearnDP = checkedLearnDPs.some(idx => {
+          const cell = row[idx] ? row[idx].trim() : '';
+          return cell.includes('◎') || cell.includes('○') || cell.includes('◯') || cell.includes('〇');
+        });
+      }
+
+      if (matchCategory && matchYear && matchSearch && matchTargetDP && matchLearnDP) {
         visibleCount++;
         const tr = document.createElement('tr');
         const userScoreVal = userScores[subjectName];
@@ -1353,7 +1422,7 @@
       strBox.appendChild(createDPCheckbox(item.dpName, 'str', strClass, strBadge));
     });
 
-    // 2. 弱み（達成割合が低い順＝pctRank順：伸びしろ順）にソートして出力
+    // 2. 弱み（達成割合が低い順＝pctRank順：ワースト順）にソートして出力
     const weakSorted = [...dpItems].sort((a, b) => a.pctRank - b.pctRank);
     weakSorted.forEach(item => {
       let weakClass = '', weakBadge = '';
@@ -1506,7 +1575,7 @@
     const data = planFormData[mode];
     document.getElementById('step1-input').value = data.step1 || '';
     document.getElementById('step2-input').value = data.step2 || '';
-    document.getElementById('targetTermSelect').value = data.targetTerm || '1年春学期';
+    document.getElementById('targetTermSelect').value = data.targetTerm || '1年前期';
     document.getElementById('step4-curriculum').value = data.step4Curriculum || '';
     document.getElementById('step4-certification').value = data.step4Certification || '';
     document.getElementById('step4-external').value = data.step4External || '';
@@ -1684,7 +1753,7 @@
 
     const allStrengths = Array.from(new Set([...sortedTopDPs, ...cStrDescs]));
     let cStrengthText = allStrengths.length > 0
-      ? `私の強みは、「${allStrengths.join('」や「')}」です。これまでの学びを通じて自身の強みを磨き、主体的に課題へ取り組む姿勢を培ってきました。`
+      ? `私の強みは、DP分析に基づく「${allStrengths.join('」や「')}」です。これまでの学びを通じて自身の強みを磨き、主体的に課題へ取り組む姿勢を培ってきました。`
       : `私の強みは、自発的な行動力と継続的な学修意欲です。これまでの学びを通じて自身の資質を磨き、主体的に取り組む姿勢を培ってきました。`;
 
     let cGradSentences = [];
@@ -1695,7 +1764,7 @@
     if (c.step4External) cActions.push(`課外活動での${c.step4External}`);
     if (cActions.length > 0) cGradSentences.push(`${cActions.join('や')}に積極的に挑みます`);
 
-    let cGradText = `卒業までに、${cGradSentences.join('、')}。専門知識と実践力を備えた、社会で活躍できる人材を目指します。`;
+    let cGradText = `卒業までに、${cGradSentences.join('、')}。専門知識と実践力を備えた理想的な姿で卒業し、社会で活躍できる人材を目指します。`;
     let cReasonClean = formatReasonText(c.step2);
     let cJobText = `卒業後は${c.step1}の分野で活躍することを希望しています。${cReasonClean}という強い思いがあるため、この目標の実現に向けて着実にステップアップしていきます。`;
 
@@ -1703,7 +1772,7 @@
 
     // --- 2. 今学期の目標文章作成 ---
     const tWeakDescs = (t.weakSelected || []).map(getDPDescription);
-    let tAcadText = `今学期（${t.targetTerm}）は、${t.step1}の達成を目指します。授業・学事において${t.step4Curriculum}に注力し、学業成績の向上に努めます。`;
+    let tAcadText = `今学期（${t.targetTerm}）は、${t.step1}の達成を目指します。授業・学事において${t.step4Curriculum}に注力し、優れた評価を目指して学業成績の向上に努めます。`;
 
     let tCertText = t.step4Certification 
       ? `資格・検定・コンクール等において「${t.step4Certification}」に取り組み、専門的なスキルや知識の修得を図り、将来のキャリアに向けた実践力を養います。`
