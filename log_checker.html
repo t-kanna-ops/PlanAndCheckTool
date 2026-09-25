@@ -365,13 +365,24 @@
 
 <script>
   const API_URL = "https://script.google.com/macros/s/AKfycbxhnAuLSDC9RNJVMchz43usXKjWeVHhRIlOvi3EdKZVIKStYaDGGx_61-4wWSkbBvfT/exec";
+  const COMMON_CSV_FILE = 'art_expression05.csv';
   
+  const DEPT_CSV_MAP = {
+    '情報表現学科': 'art_expression01.csv',
+    '芸術表現学科': 'art_expression02.csv',
+    '総合政策学科': 'art_expression03.csv',
+    'スポーツマネジメント学科': 'art_expression04.csv'
+  };
+
   let allLogs = [];
   let currentSelectedLog = null;
   let modalChartPtInstance = null;
   let modalChartPctInstance = null;
+  let deptMaxPtsMap = {}; // 各学科の全DP上限ptキャッシュ { '芸術表現学科': { '本質を見抜く力（審美眼）': 40, ... } }
 
   document.addEventListener('DOMContentLoaded', () => {
+    loadAllCurriculumMaxPts(); // 全学科カリキュラムの上限DP ptを事前ロード
+    
     const savedPass = sessionStorage.getItem("log_checker_pass");
     if (savedPass) {
       fetchLogs(savedPass);
@@ -379,6 +390,125 @@
     document.getElementById('search-input').addEventListener('input', filterAndRenderLogs);
     document.getElementById('dept-filter').addEventListener('change', filterAndRenderLogs);
   });
+
+  // --- CSVパーサー ＆ カリキュラム上限DP算出演算 ---
+  function parseCSV(text) {
+    const lines = text.trim().split(/\r?\n/);
+    if (lines.length === 0) return { header: [], rows: [] };
+
+    const parseLine = (line) => {
+      const result = [];
+      let current = '';
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') inQuotes = !inQuotes;
+        else if (char === ',' && !inQuotes) { result.push(current.trim()); current = ''; }
+        else current += char;
+      }
+      result.push(current.trim());
+      return result;
+    };
+
+    const header = parseLine(lines[0]);
+    const rows = [];
+    for (let i = 1; i < lines.length; i++) {
+      if (!lines[i].trim()) continue;
+      const row = parseLine(lines[i]);
+      if (row.length === header.length) rows.push(row);
+    }
+    return { header, rows };
+  }
+
+  function getDPDescription(dpFullHeader) {
+    if (!dpFullHeader) return '';
+    if (dpFullHeader.includes('：')) return dpFullHeader.split('：')[1].trim();
+    if (dpFullHeader.includes(':')) return dpFullHeader.split(':')[1].trim();
+    return dpFullHeader.trim();
+  }
+
+  // 全学科＋教養科目から各DPの最大獲得可能ポイント(maxPt)を集計
+  async function loadAllCurriculumMaxPts() {
+    try {
+      const commonRes = await fetch(COMMON_CSV_FILE);
+      if (!commonRes.ok) return;
+      const commonText = await commonRes.text();
+      const commonParsed = parseCSV(commonText);
+
+      for (const [deptName, fileName] of Object.entries(DEPT_CSV_MAP)) {
+        try {
+          const deptRes = await fetch(fileName);
+          if (!deptRes.ok) continue;
+          const deptText = await deptRes.text();
+          const deptParsed = parseCSV(deptText);
+
+          deptMaxPtsMap[deptName] = calculateMaxPtsForDept(deptParsed, commonParsed);
+        } catch (e) {
+          console.warn(`${deptName} のデータ読込エラー:`, e);
+        }
+      }
+    } catch (e) {
+      console.warn("共通教養CSV読込エラー:", e);
+    }
+  }
+
+  function calculateMaxPtsForDept(deptParsed, commonParsed) {
+    const header = deptParsed.header;
+    let unitsIdx = header.indexOf('単位数');
+    if (unitsIdx === -1) unitsIdx = header.indexOf('単位');
+
+    const dpCols = [];
+    header.forEach((colName, idx) => {
+      if (colName.includes('DP')) {
+        dpCols.push({ idx, name: getDPDescription(colName), rawName: colName });
+      }
+    });
+
+    const maxPts = {};
+    dpCols.forEach(col => { maxPts[col.name] = 0; });
+
+    // 1. 学科専攻科目
+    deptParsed.rows.forEach(row => {
+      const credits = (unitsIdx !== -1 && row[unitsIdx]) ? (parseFloat(row[unitsIdx]) || 1) : 1;
+      dpCols.forEach(col => {
+        const cell = row[col.idx] ? row[col.idx].trim() : '';
+        let basePts = 0;
+        if (cell.includes('◎')) basePts = 2;
+        else if (cell.includes('○') || cell.includes('◯') || cell.includes('〇')) basePts = 1;
+        maxPts[col.name] += basePts * credits;
+      });
+    });
+
+    // 2. 教養科目 (配列アライメント)
+    let commonUnitsIdx = commonParsed.header.indexOf('単位数');
+    if (commonUnitsIdx === -1) commonUnitsIdx = commonParsed.header.indexOf('単位');
+
+    commonParsed.rows.forEach(row => {
+      const credits = (commonUnitsIdx !== -1 && row[commonUnitsIdx]) ? (parseFloat(row[commonUnitsIdx]) || 1) : 1;
+
+      dpCols.forEach(col => {
+        const dpMatch = col.rawName.match(/DP\d+[-_]\d+/i);
+        let commonDpIdx = -1;
+        if (dpMatch) {
+          const dpCode = dpMatch[0].toUpperCase().replace('_', '-');
+          commonDpIdx = commonParsed.header.findIndex(h => {
+            const upperH = h.toUpperCase().trim().replace('_', '-');
+            return upperH === dpCode || upperH.startsWith(dpCode + ':') || upperH.startsWith(dpCode + '：');
+          });
+        }
+
+        if (commonDpIdx !== -1 && row[commonDpIdx]) {
+          const cell = row[commonDpIdx].trim();
+          let basePts = 0;
+          if (cell.includes('◎')) basePts = 2;
+          else if (cell.includes('○') || cell.includes('◯') || cell.includes('〇')) basePts = 1;
+          maxPts[col.name] += basePts * credits;
+        }
+      });
+    });
+
+    return maxPts;
+  }
 
   function submitLogin() {
     const pass = document.getElementById('password-input').value.trim();
@@ -394,7 +524,6 @@
     document.getElementById('login-error-message').style.display = 'none';
   }
 
-  // GASからログを取得する関数（パスワード送信付き）
   async function fetchLogs(passwordInput) {
     const pass = passwordInput || sessionStorage.getItem("log_checker_pass") || "";
     const loadingEl = document.getElementById('loading-message');
@@ -422,7 +551,6 @@
         return;
       }
 
-      // 認証成功時
       sessionStorage.setItem("log_checker_pass", pass);
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('main-app').style.display = 'block';
@@ -559,7 +687,8 @@
     return { labels, values };
   }
 
-  function renderModalCharts(dpSummaryText) {
+  // index.htmlと完全に同一のロジックで2つのレーダーチャート（合算pt ＆ 達成割合%）を描画
+  function renderModalCharts(dpSummaryText, deptName) {
     const parsed = parseDpSummary(dpSummaryText);
     if (parsed.labels.length === 0) return;
 
@@ -570,13 +699,20 @@
     if (modalChartPtInstance) modalChartPtInstance.destroy();
     if (modalChartPctInstance) modalChartPctInstance.destroy();
 
+    const currentDPTotals = parsed.values;
+    const currentDPNames = parsed.labels;
+
+    // 該当学科のカリキュラム上限DP ptマップを取得
+    const maxPtsMap = deptMaxPtsMap[deptName] || {};
+
+    // 1. 合算pt チャート
     modalChartPtInstance = new Chart(canvasPt.getContext('2d'), {
       type: 'radar',
       data: {
-        labels: parsed.labels,
+        labels: currentDPNames,
         datasets: [{
-          label: '獲得pt',
-          data: parsed.values,
+          label: '修得DPポイント (pt)',
+          data: currentDPTotals,
           backgroundColor: 'rgba(30, 58, 138, 0.25)',
           borderColor: 'rgba(30, 58, 138, 1)',
           borderWidth: 1.5,
@@ -597,16 +733,23 @@
       }
     });
 
-    const maxVal = Math.max(...parsed.values, 1);
-    const percentValues = parsed.values.map(v => parseFloat(((v / maxVal) * 100).toFixed(1)));
+    // 2. 達成割合 (%) チャート （index.html と完全に一致する計算）
+    const percentData = currentDPTotals.map((val, idx) => {
+      const dpName = currentDPNames[idx];
+      const maxVal = maxPtsMap[dpName] || 0;
+      return maxVal > 0 ? (val / maxVal) * 100 : 0;
+    });
+
+    const maxRatio = Math.max(...percentData, 0);
+    const maxScalePct = (maxRatio === 0) ? 10 : Math.min(100, Math.ceil((maxRatio + 2) / 5) * 5);
 
     modalChartPctInstance = new Chart(canvasPct.getContext('2d'), {
       type: 'radar',
       data: {
-        labels: parsed.labels,
+        labels: currentDPNames,
         datasets: [{
-          label: '相対達成割合 (%)',
-          data: percentValues,
+          label: 'DP達成率 (%)',
+          data: percentData,
           backgroundColor: 'rgba(5, 150, 105, 0.25)',
           borderColor: 'rgba(5, 150, 105, 1)',
           borderWidth: 1.5,
@@ -619,7 +762,7 @@
         scales: {
           r: {
             beginAtZero: true,
-            max: 100,
+            max: maxScalePct,
             ticks: { display: false },
             pointLabels: { font: { size: 8, weight: 'bold' }, color: '#047857' }
           }
@@ -687,7 +830,7 @@
               <canvas id="modalCanvasPt"></canvas>
             </div>
             <div class="chart-box">
-              <div style="font-size: 9.5px; font-weight: bold; color: #047857; text-align: center; margin-bottom: 2px;">DP達成分布割合 (%)</div>
+              <div style="font-size: 9.5px; font-weight: bold; color: #047857; text-align: center; margin-bottom: 2px;">DP達成割合 (%)</div>
               <canvas id="modalCanvasPct"></canvas>
             </div>
           </div>
@@ -708,7 +851,7 @@
     document.getElementById('sheet-modal').classList.add('active');
 
     setTimeout(() => {
-      renderModalCharts(dpSummary);
+      renderModalCharts(dpSummary, dept);
     }, 50);
   }
 
@@ -765,7 +908,7 @@
                 <img src="${imgPtSrc}" style="width:100%; max-width:260px; height:auto;">
               </div>
               <div style="flex:1; text-align:center;">
-                <div style="font-size:9.5px; font-weight:bold; color:#047857; margin-bottom:2px;">DP達成分布割合 (%)</div>
+                <div style="font-size:9.5px; font-weight:bold; color:#047857; margin-bottom:2px;">DP達成割合 (%)</div>
                 <img src="${imgPctSrc}" style="width:100%; max-width:260px; height:auto;">
               </div>
             \`;
