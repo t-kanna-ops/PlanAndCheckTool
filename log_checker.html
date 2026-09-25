@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>学修PDCA ログチェッカー・サプリメントシート閲覧</title>
+  <style>
+    :root {
+      --primary: #1e3a8a;
+      --primary-light: #eff6ff;
+      --accent: #2563eb;
+      --success: #059669;
+      --border: #cbd5e1;
+      --bg: #f8fafc;
+      --text: #1e293b;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.5;
+      color: var(--text);
+      background-color: var(--bg);
+      margin: 0;
+      padding: 16px;
+    }
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    }
+    h1 {
+      font-size: 1.4rem;
+      color: var(--primary);
+      border-bottom: 3px solid var(--primary);
+      padding-bottom: 8px;
+      margin-top: 0;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .status-badge {
+      font-size: 0.8rem;
+      font-weight: normal;
+      background: #e2e8f0;
+      padding: 4px 10px;
+      border-radius: 20px;
+      color: #475569;
+    }
+
+    /* コントロールエリア */
+    .controls-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      background: #f1f5f9;
+      padding: 14px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
+    .form-group {
+      margin: 0;
+    }
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 4px;
+      font-size: 0.85rem;
+      color: #475569;
+    }
+    input[type="text"], select {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.9rem;
+      background-color: #fff;
+    }
+
+    .btn {
+      background: var(--primary);
+      color: #fff;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 0.88rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: background 0.2s;
+    }
+    .btn:hover { background: var(--accent); }
+    .btn-secondary { background: #64748b; }
+    .btn-secondary:hover { background: #475569; }
+    .btn-success { background: var(--success); }
+    .btn-success:hover { background: #047857; }
+    .btn-sm {
+      padding: 4px 10px;
+      font-size: 0.78rem;
+      min-height: auto;
+    }
+
+    /* サマリーカード */
+    .summary-bar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .summary-card {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      flex: 1;
+      min-width: 140px;
+    }
+    .summary-title { font-size: 0.75rem; color: #64748b; font-weight: bold; }
+    .summary-val { font-size: 1.2rem; font-weight: bold; color: var(--primary); margin-top: 2px; }
+
+    /* テーブル */
+    .table-wrapper {
+      overflow-x: auto;
+      max-height: 520px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      -webkit-overflow-scrolling: touch;
+    }
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      font-size: 0.85rem;
+      text-align: left;
+    }
+    th, td {
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 8px;
+      white-space: nowrap;
+    }
+    th {
+      background: #f1f5f9;
+      color: #334155;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      font-weight: 600;
+    }
+    tr:hover { background-color: #f1f5f9; }
+
+    /* メッセージエリア */
+    .loading-box, .error-box, .empty-box {
+      padding: 24px;
+      text-align: center;
+      border-radius: 8px;
+      margin: 16px 0;
+    }
+    .loading-box { background: #eff6ff; color: #1e3a8a; border: 1px solid #bfdbfe; }
+    .error-box { background: #fef2f2; color: #991b1b; border: 1px solid #fca5a5; }
+    .empty-box { background: #f8fafc; color: #64748b; border: 1px solid var(--border); }
+
+    /* モーダル表示 */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.6);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
+      padding: 16px;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal-container {
+      background: #ffffff;
+      width: 100%;
+      max-width: 900px;
+      max-height: 90vh;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+      overflow: hidden;
+    }
+    .modal-header {
+      padding: 12px 16px;
+      background: #0f172a;
+      color: #ffffff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-body {
+      padding: 16px;
+      overflow-y: auto;
+      flex: 1;
+      background: #f8fafc;
+    }
+    .modal-footer {
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      background: #ffffff;
+    }
+    .close-btn {
+      background: none;
+      border: none;
+      color: #ffffff;
+      font-size: 1.2rem;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>
+    🔍 学修PDCA ログチェッカー
+    <span class="status-badge" id="last-update">未読み込み</span>
+  </h1>
+
+  <!-- コントロールエリア -->
+  <div class="controls-grid">
+    <div class="form-group">
+      <label for="search-input">検索（学籍番号・氏名）</label>
+      <input type="text" id="search-input" placeholder="例: 2200000 や 尚美">
+    </div>
+
+    <div class="form-group">
+      <label for="dept-filter">学科で絞り込み</label>
+      <select id="dept-filter">
+        <option value="all">すべての学科</option>
+      </select>
+    </div>
+
+    <div class="form-group" style="display: flex; align-items: flex-end;">
+      <button class="btn btn-success" style="width: 100%;" onclick="fetchLogs()">
+        🔄 ログデータを最新化
+      </button>
+    </div>
+  </div>
+
+  <!-- サマリーバー -->
+  <div class="summary-bar">
+    <div class="summary-card">
+      <div class="summary-title">総取得ログ件数</div>
+      <div class="summary-val" id="summary-total">0 件</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-title">表示中のログ件数</div>
+      <div class="summary-val" id="summary-visible">0 件</div>
+    </div>
+  </div>
+
+  <!-- メッセージ表示エリア -->
+  <div id="loading-message" class="loading-box" style="display: none;">
+    ⏳ Google Apps Script から最新のログデータを読み込んでいます...
+  </div>
+  <div id="error-message" class="error-box" style="display: none;"></div>
+
+  <!-- ログ一覧テーブル -->
+  <div class="table-wrapper" id="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>操作</th>
+          <th>日時</th>
+          <th>所属学科</th>
+          <th>学籍番号</th>
+          <th>氏名</th>
+          <th>総単位数</th>
+          <th>GPA</th>
+        </tr>
+      </thead>
+      <tbody id="log-table-body">
+        <tr>
+          <td colspan="7" style="text-align: center; color: #94a3b8; padding: 20px;">
+            「ログデータを最新化」ボタンを押してログを取得してください。
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- サプリメントシートプレビュー用 モーダル -->
+<div class="modal-overlay" id="sheet-modal">
+  <div class="modal-container">
+    <div class="modal-header">
+      <span style="font-weight: bold; font-size: 1.0rem;">📄 学修分析・PDCAサプリメントシート プレビュー</span>
+      <button class="close-btn" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body-content">
+      <!-- サプリメントシートがここにレンダリングされます -->
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">閉じる</button>
+      <button class="btn btn-success" onclick="printCurrentSheet()">🖨️ 印刷 / PDFで保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const API_URL = "https://script.google.com/macros/s/AKfycbxhnAuLSDC9RNJVMchz43usXKjWeVHhRIlOvi3EdKZVIKStYaDGGx_61-4wWSkbBvfT/exec";
+  
+  let allLogs = [];
+  let currentSelectedLog = null;
+
+  // 起動時のログ自動取得
+  document.addEventListener('DOMContentLoaded', () => {
+    fetchLogs();
+
+    document.getElementById('search-input').addEventListener('input', filterAndRenderLogs);
+    document.getElementById('dept-filter').addEventListener('change', filterAndRenderLogs);
+  });
+
+  // GASからログを取得する関数
+  async function fetchLogs() {
+    const loadingEl = document.getElementById('loading-message');
+    const errorEl = document.getElementById('error-message');
+    const updateEl = document.getElementById('last-update');
+
+    loadingEl.style.display = 'block';
+    errorEl.style.display = 'none';
+
+    try {
+      const response = await fetch(API_URL);
+      if (!response.ok) throw new Error(`HTTPエラー: ${response.status}`);
+      
+      const resData = await response.json();
+      
+      // レスポンスが配列か、オブジェクトのプロパティ内にあるかを判定
+      if (Array.isArray(resData)) {
+        allLogs = resData;
+      } else if (resData.logs && Array.isArray(resData.logs)) {
+        allLogs = resData.logs;
+      } else if (resData.data && Array.isArray(resData.data)) {
+        allLogs = resData.data;
+      } else {
+        allLogs = [resData]; // 単一オブジェクトの場合
+      }
+
+      // 新しい順（降順）にソート
+      allLogs.reverse();
+
+      updateDeptFilterOptions();
+      filterAndRenderLogs();
+
+      const now = new Date();
+      updateEl.textContent = `最終更新: ${now.toLocaleTimeString('ja-JP')}`;
+    } catch (err) {
+      console.error(err);
+      errorEl.textContent = `⚠️ ログデータの取得に失敗しました: ${err.message} （GASのCORS設定やアクセス権限をご確認ください）`;
+      errorEl.style.display = 'block';
+    } finally {
+      loadingEl.style.display = 'none';
+    }
+  }
+
+  // 学科フィルターのドロップダウン更新
+  function updateDeptFilterOptions() {
+    const deptSelect = document.getElementById('dept-filter');
+    const depts = new Set();
+
+    allLogs.forEach(log => {
+      const d = log.department || log['所属学科'] || log.dept;
+      if (d) depts.add(d);
+    });
+
+    deptSelect.innerHTML = '<option value="all">すべての学科</option>';
+    Array.from(depts).sort().forEach(d => {
+      const opt = document.createElement('option');
+      opt.value = d;
+      opt.textContent = d;
+      deptSelect.appendChild(opt);
+    });
+  }
+
+  // ログの絞り込みと描画
+  function filterAndRenderLogs() {
+    const searchVal = document.getElementById('search-input').value.trim().toLowerCase();
+    const deptVal = document.getElementById('dept-filter').value;
+    const tbody = document.getElementById('log-table-body');
+
+    tbody.innerHTML = '';
+
+    const filtered = allLogs.filter(log => {
+      const studentId = String(log.studentId || log['学籍番号'] || '').toLowerCase();
+      const studentName = String(log.studentName || log['氏名'] || '').toLowerCase();
+      const dept = String(log.department || log['所属学科'] || '');
+
+      const matchSearch = !searchVal || studentId.includes(searchVal) || studentName.includes(searchVal);
+      const matchDept = (deptVal === 'all') || (dept === deptVal);
+
+      return matchSearch && matchDept;
+    });
+
+    document.getElementById('summary-total').textContent = `${allLogs.length} 件`;
+    document.getElementById('summary-visible').textContent = `${filtered.length} 件`;
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="7" style="text-align: center; color: #94a3b8; padding: 20px;">
+            該当するログデータが見つかりませんでした。
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    filtered.forEach((log, index) => {
+      const dateStr = log.timestamp || log.date || log['日時'] || '不明';
+      const dept = log.department || log['所属学科'] || '-';
+      const studentId = log.studentId || log['学籍番号'] || '-';
+      const studentName = log.studentName || log['氏名'] || '-';
+      const credits = log.totalCredits !== undefined ? log.totalCredits : (log['総修得単位数'] || '-');
+      const gpa = log.gpaVal !== undefined ? log.gpaVal : (log['GPA平均'] || '-');
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>
+          <button class="btn btn-sm btn-success" onclick="openSheetModal(${allLogs.indexOf(log)})">
+            📄 シートを表示
+          </button>
+        </td>
+        <td style="font-size: 0.78rem; color: #64748b;">${formatDate(dateStr)}</td>
+        <td><strong>${dept}</strong></td>
+        <td>${studentId}</td>
+        <td><strong>${studentName}</strong></td>
+        <td>${credits} 単位</td>
+        <td><strong style="color:var(--primary);">${gpa}</strong></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // 日時文字列の整形
+  function formatDate(rawDate) {
+    if (!rawDate || rawDate === '不明') return '不明';
+    try {
+      const d = new Date(rawDate);
+      if (isNaN(d.getTime())) return rawDate;
+      return d.toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    } catch {
+      return rawDate;
+    }
+  }
+
+  // モーダルでサプリメントシートを表示
+  function openSheetModal(index) {
+    const log = allLogs[index];
+    if (!log) return;
+    
+    currentSelectedLog = log;
+
+    const modalBody = document.getElementById('modal-body-content');
+    
+    const dept = log.department || log['所属学科'] || '未選択';
+    const studentId = log.studentId || log['学籍番号'] || '未入力';
+    const studentName = log.studentName || log['氏名'] || '未入力';
+    const totalCredits = log.totalCredits !== undefined ? log.totalCredits : 0;
+    const gpaVal = log.gpaVal !== undefined ? log.gpaVal : '0.00';
+    const dpSummary = log.dpSummary || log['DPサマリー'] || 'データなし';
+    const generatedText = log.generatedText || log['生成文章'] || '文章データがありません。';
+
+    // careerオブジェクトからの資格・受賞歴取得
+    let achievements = '特になし';
+    if (log.career && log.career.step4Achievements) {
+      achievements = log.career.step4Achievements;
+    } else if (log['保有資格・表彰・活動実績']) {
+      achievements = log['保有資格・表彰・活動実績'];
+    }
+
+    const currentDate = formatDate(log.timestamp || log.date || new Date());
+
+    modalBody.innerHTML = `
+      <div style="background: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid var(--border); font-family: sans-serif;">
+        <div style="border-bottom: 2.5px solid #1e3a8a; padding-bottom: 6px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: flex-end;">
+          <div>
+            <h2 style="font-size: 18px; font-weight: bold; color: #1e3a8a; margin: 0;">学修分析・PDCAサプリメントシート</h2>
+            <div style="font-size: 11px; color: #475569; margin-top: 4px;">
+              所属学科：<strong>${dept}</strong> &nbsp;|&nbsp; 
+              学籍番号：<strong>${studentId}</strong> &nbsp;|&nbsp; 
+              氏名：<strong>${studentName}</strong>
+            </div>
+          </div>
+          <div style="font-size:10px; color:#64748b; text-align:right;">記録日時：${currentDate}</div>
+        </div>
+
+        <!-- 成績・単位サマリー -->
+        <div style="display: flex; gap: 12px; margin-bottom: 12px;">
+          <div style="flex: 1; border-radius: 6px; padding: 8px; text-align: center; background: #eff6ff; border: 1px solid #bfdbfe;">
+            <div style="font-size: 10px; color: #1e3a8a; font-weight: bold;">総修得単位数</div>
+            <div style="font-size: 18px; font-weight: bold; color: #1e3a8a; margin-top: 2px;">${totalCredits} <span style="font-size: 10px;">単位</span></div>
+          </div>
+          <div style="flex: 1; border-radius: 6px; padding: 8px; text-align: center; background: #ecfdf5; border: 1px solid #a7f3d0;">
+            <div style="font-size: 10px; color: #047857; font-weight: bold;">GPA平均</div>
+            <div style="font-size: 18px; font-weight: bold; color: #047857; margin-top: 2px;">${gpaVal}</div>
+          </div>
+        </div>
+
+        <!-- DP修得ポイントサマリー -->
+        <div style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; background: #fafafa; margin-bottom: 12px;">
+          <div style="font-size: 11px; font-weight: bold; color: #0f172a; margin-bottom: 4px;">■ 修得済みDPポイントサマリー</div>
+          <div style="font-size: 10px; color: #334155; line-height: 1.4;">${dpSummary}</div>
+        </div>
+
+        <!-- 自動生成文章 -->
+        <div style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; background: #ffffff; margin-bottom: 12px;">
+          <div style="font-size: 11px; font-weight: bold; color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">■ 学修計画・目標分析文章</div>
+          <div style="white-space: pre-wrap; font-size: 10.5px; line-height: 1.5; color: #334155; margin-top: 6px;">${generatedText}</div>
+        </div>
+
+        <!-- 保有資格・活動実績 -->
+        <div style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; background: #ffffff;">
+          <div style="font-size: 11px; font-weight: bold; color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">■ 保有資格・表彰・活動実績</div>
+          <div style="white-space: pre-wrap; font-size: 10.5px; line-height: 1.5; color: #334155; margin-top: 6px;">${achievements}</div>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('sheet-modal').classList.add('active');
+  }
+
+  function closeModal() {
+    document.getElementById('sheet-modal').classList.remove('active');
+  }
+
+  // サプリメントシートを別ウィンドウで印刷
+  function printCurrentSheet() {
+    if (!currentSelectedLog) return;
+
+    const modalContent = document.getElementById('modal-body-content').innerHTML;
+    const printWindow = window.open('', '_blank');
+    
+    if (!printWindow) {
+      alert('ポップアップがブロックされました。ブラウザのポップアップを許可してください。');
+      return;
+    }
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html lang="ja">
+      <head>
+        <meta charset="UTF-8">
+        <title>学修分析サプリメントシート - 印刷</title>
+        <style>
+          @page { size: A4 portrait; margin: 12mm 15mm; }
+          body { font-family: sans-serif; color: #1e293b; margin: 0; padding: 0; background: #fff; }
+          .no-print-bar { position: sticky; top: 0; background: #0f172a; color: #fff; padding: 10px; text-align: center; }
+          .print-btn { background: #059669; color: #fff; border: none; padding: 8px 20px; font-size: 13px; font-weight: bold; border-radius: 4px; cursor: pointer; }
+          @media print { .no-print-bar { display: none !important; } }
+        </style>
+      </head>
+      <body>
+        <div class="no-print-bar">
+          <button class="print-btn" onclick="window.print()">🖨️ 印刷する / PDFとして保存</button>
+        </div>
+        <div style="padding: 15mm 0;">
+          ${modalContent}
+        </div>
+      </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+  }
+</script>
+</body>
+</html>
