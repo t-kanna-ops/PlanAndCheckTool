@@ -660,14 +660,14 @@
       <div class="form-group" id="targetTermGroup" style="margin-top:8px; display:none;">
         <label for="targetTermSelect">目標対象の年次・学期</label>
         <select id="targetTermSelect" style="max-width: 180px;">
-          <option value="1年前期">1年 前期</option>
-          <option value="1年後期">1年 後期</option>
-          <option value="2年前期">2年 前期</option>
-          <option value="2年後期">2年 後期</option>
-          <option value="3年前期">3年 前期</option>
-          <option value="3年後期">3年 後期</option>
-          <option value="4年前期">4年 前期</option>
-          <option value="4年後期">4年 後期</option>
+          <option value="1年春学期">1年 春学期</option>
+          <option value="1年秋学期">1年 秋学期</option>
+          <option value="2年春学期">2年 春学期</option>
+          <option value="2年秋学期">2年 秋学期</option>
+          <option value="3年春学期">3年 春学期</option>
+          <option value="3年秋学期">3年 秋学期</option>
+          <option value="4年春学期">4年 春学期</option>
+          <option value="4年秋学期">4年 秋学期</option>
         </select>
       </div>
 
@@ -787,7 +787,7 @@
       step2: '',
       strSelected: [],
       weakSelected: [],
-      targetTerm: '1年前期',
+      targetTerm: '1年春学期',
       step4Curriculum: '',
       step4Certification: '',
       step4External: '',
@@ -1569,7 +1569,7 @@
     const data = planFormData[mode];
     document.getElementById('step1-input').value = data.step1 || '';
     document.getElementById('step2-input').value = data.step2 || '';
-    document.getElementById('targetTermSelect').value = data.targetTerm || '1年前期';
+    document.getElementById('targetTermSelect').value = data.targetTerm || '1年春学期';
     document.getElementById('step4-curriculum').value = data.step4Curriculum || '';
     document.getElementById('step4-certification').value = data.step4Certification || '';
     document.getElementById('step4-external').value = data.step4External || '';
