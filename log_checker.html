@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>学修PDCA ログチェッカー・サプリメントシート閲覧</title>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
       --primary: #1e3a8a;
@@ -160,7 +162,7 @@
     tr:hover { background-color: #f1f5f9; }
 
     /* メッセージエリア */
-    .loading-box, .error-box, .empty-box {
+    .loading-box, .error-box {
       padding: 24px;
       text-align: center;
       border-radius: 8px;
@@ -168,7 +170,6 @@
     }
     .loading-box { background: #eff6ff; color: #1e3a8a; border: 1px solid #bfdbfe; }
     .error-box { background: #fef2f2; color: #991b1b; border: 1px solid #fca5a5; }
-    .empty-box { background: #f8fafc; color: #64748b; border: 1px solid var(--border); }
 
     /* モーダル表示 */
     .modal-overlay {
@@ -222,6 +223,22 @@
       font-size: 1.2rem;
       cursor: pointer;
     }
+
+    /* レーダーチャート表示ボックス */
+    .chart-container-grid {
+      display: flex;
+      gap: 12px;
+      justify-content: space-around;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .chart-box {
+      flex: 1;
+      min-width: 240px;
+      max-width: 380px;
+      height: 240px;
+      position: relative;
+    }
   </style>
 </head>
 <body>
@@ -272,7 +289,7 @@
   <div id="error-message" class="error-box" style="display: none;"></div>
 
   <!-- ログ一覧テーブル -->
-  <div class="table-wrapper" id="table-wrapper">
+  <div class="table-wrapper">
     <table>
       <thead>
         <tr>
@@ -318,11 +335,11 @@
   
   let allLogs = [];
   let currentSelectedLog = null;
+  let modalChartPtInstance = null;
+  let modalChartPctInstance = null;
 
-  // 起動時のログ自動取得
   document.addEventListener('DOMContentLoaded', () => {
     fetchLogs();
-
     document.getElementById('search-input').addEventListener('input', filterAndRenderLogs);
     document.getElementById('dept-filter').addEventListener('change', filterAndRenderLogs);
   });
@@ -342,7 +359,6 @@
       
       const resData = await response.json();
       
-      // レスポンスが配列か、オブジェクトのプロパティ内にあるかを判定
       if (Array.isArray(resData)) {
         allLogs = resData;
       } else if (resData.logs && Array.isArray(resData.logs)) {
@@ -350,10 +366,9 @@
       } else if (resData.data && Array.isArray(resData.data)) {
         allLogs = resData.data;
       } else {
-        allLogs = [resData]; // 単一オブジェクトの場合
+        allLogs = [resData];
       }
 
-      // 新しい順（降順）にソート
       allLogs.reverse();
 
       updateDeptFilterOptions();
@@ -363,14 +378,13 @@
       updateEl.textContent = `最終更新: ${now.toLocaleTimeString('ja-JP')}`;
     } catch (err) {
       console.error(err);
-      errorEl.textContent = `⚠️ ログデータの取得に失敗しました: ${err.message} （GASのCORS設定やアクセス権限をご確認ください）`;
+      errorEl.textContent = `⚠️ ログデータの取得に失敗しました: ${err.message}`;
       errorEl.style.display = 'block';
     } finally {
       loadingEl.style.display = 'none';
     }
   }
 
-  // 学科フィルターのドロップダウン更新
   function updateDeptFilterOptions() {
     const deptSelect = document.getElementById('dept-filter');
     const depts = new Set();
@@ -389,7 +403,6 @@
     });
   }
 
-  // ログの絞り込みと描画
   function filterAndRenderLogs() {
     const searchVal = document.getElementById('search-input').value.trim().toLowerCase();
     const deptVal = document.getElementById('dept-filter').value;
@@ -422,7 +435,7 @@
       return;
     }
 
-    filtered.forEach((log, index) => {
+    filtered.forEach((log) => {
       const dateStr = log.timestamp || log.date || log['日時'] || '不明';
       const dept = log.department || log['所属学科'] || '-';
       const studentId = log.studentId || log['学籍番号'] || '-';
@@ -448,7 +461,6 @@
     });
   }
 
-  // 日時文字列の整形
   function formatDate(rawDate) {
     if (!rawDate || rawDate === '不明') return '不明';
     try {
@@ -458,6 +470,99 @@
     } catch {
       return rawDate;
     }
+  }
+
+  // W列のDP文字列（"項目: XX.Xpt / ..."）をパースする関数
+  function parseDpSummary(dpSummaryText) {
+    if (!dpSummaryText) return { labels: [], values: [] };
+    const items = dpSummaryText.split('/');
+    const labels = [];
+    const values = [];
+
+    items.forEach(item => {
+      const parts = item.split(':');
+      if (parts.length === 2) {
+        const label = parts[0].trim();
+        const valStr = parts[1].replace('pt', '').trim();
+        const val = parseFloat(valStr);
+        labels.push(label);
+        values.push(isNaN(val) ? 0 : val);
+      }
+    });
+    return { labels, values };
+  }
+
+  // モーダル内でレーダーチャートを描画
+  function renderModalCharts(dpSummaryText) {
+    const parsed = parseDpSummary(dpSummaryText);
+    if (parsed.labels.length === 0) return;
+
+    const canvasPt = document.getElementById('modalCanvasPt');
+    const canvasPct = document.getElementById('modalCanvasPct');
+    if (!canvasPt || !canvasPct) return;
+
+    if (modalChartPtInstance) modalChartPtInstance.destroy();
+    if (modalChartPctInstance) modalChartPctInstance.destroy();
+
+    // 1. 合算ptチャート
+    modalChartPtInstance = new Chart(canvasPt.getContext('2d'), {
+      type: 'radar',
+      data: {
+        labels: parsed.labels,
+        datasets: [{
+          label: '獲得pt',
+          data: parsed.values,
+          backgroundColor: 'rgba(30, 58, 138, 0.25)',
+          borderColor: 'rgba(30, 58, 138, 1)',
+          borderWidth: 1.5,
+          pointRadius: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          r: {
+            beginAtZero: true,
+            ticks: { display: false },
+            pointLabels: { font: { size: 8, weight: 'bold' }, color: '#1e3a8a' }
+          }
+        },
+        plugins: { legend: { display: false } }
+      }
+    });
+
+    // 2. 達成割合 (%) チャート (最高獲得pt項目を基準とした相対達成率分布)
+    const maxVal = Math.max(...parsed.values, 1);
+    const percentValues = parsed.values.map(v => parseFloat(((v / maxVal) * 100).toFixed(1)));
+
+    modalChartPctInstance = new Chart(canvasPct.getContext('2d'), {
+      type: 'radar',
+      data: {
+        labels: parsed.labels,
+        datasets: [{
+          label: '相対達成割合 (%)',
+          data: percentValues,
+          backgroundColor: 'rgba(5, 150, 105, 0.25)',
+          borderColor: 'rgba(5, 150, 105, 1)',
+          borderWidth: 1.5,
+          pointRadius: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          r: {
+            beginAtZero: true,
+            max: 100,
+            ticks: { display: false },
+            pointLabels: { font: { size: 8, weight: 'bold' }, color: '#047857' }
+          }
+        },
+        plugins: { legend: { display: false } }
+      }
+    });
   }
 
   // モーダルでサプリメントシートを表示
@@ -474,15 +579,14 @@
     const studentName = log.studentName || log['氏名'] || '未入力';
     const totalCredits = log.totalCredits !== undefined ? log.totalCredits : 0;
     const gpaVal = log.gpaVal !== undefined ? log.gpaVal : '0.00';
-    const dpSummary = log.dpSummary || log['DPサマリー'] || 'データなし';
-    const generatedText = log.generatedText || log['生成文章'] || '文章データがありません。';
+    const dpSummary = log.dpSummary || log['獲得DPポイント詳細'] || log['DPサマリー'] || '';
+    const generatedText = log.generatedText || log['完成文章'] || '文章データがありません。';
 
-    // careerオブジェクトからの資格・受賞歴取得
     let achievements = '特になし';
     if (log.career && log.career.step4Achievements) {
       achievements = log.career.step4Achievements;
-    } else if (log['保有資格・表彰・活動実績']) {
-      achievements = log['保有資格・表彰・活動実績'];
+    } else if (log['【キャリア】保有資格・受賞歴']) {
+      achievements = log['【キャリア】保有資格・受賞歴'];
     }
 
     const currentDate = formatDate(log.timestamp || log.date || new Date());
@@ -513,10 +617,19 @@
           </div>
         </div>
 
-        <!-- DP修得ポイントサマリー -->
+        <!-- DPレーダーチャートエリア -->
         <div style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; background: #fafafa; margin-bottom: 12px;">
-          <div style="font-size: 11px; font-weight: bold; color: #0f172a; margin-bottom: 4px;">■ 修得済みDPポイントサマリー</div>
-          <div style="font-size: 10px; color: #334155; line-height: 1.4;">${dpSummary}</div>
+          <div style="font-size: 11px; font-weight: bold; color: #0f172a; margin-bottom: 8px;">■ ディプロマ・ポリシー（DP）獲得能力分析</div>
+          <div class="chart-container-grid">
+            <div class="chart-box">
+              <div style="font-size: 9.5px; font-weight: bold; color: #1e3a8a; text-align: center; margin-bottom: 2px;">獲得DPポイント (合算pt)</div>
+              <canvas id="modalCanvasPt"></canvas>
+            </div>
+            <div class="chart-box">
+              <div style="font-size: 9.5px; font-weight: bold; color: #047857; text-align: center; margin-bottom: 2px;">DP達成分布割合 (%)</div>
+              <canvas id="modalCanvasPct"></canvas>
+            </div>
+          </div>
         </div>
 
         <!-- 自動生成文章 -->
@@ -534,15 +647,26 @@
     `;
 
     document.getElementById('sheet-modal').classList.add('active');
+
+    // モーダル描画後にチャートを初期化
+    setTimeout(() => {
+      renderModalCharts(dpSummary);
+    }, 50);
   }
 
   function closeModal() {
     document.getElementById('sheet-modal').classList.remove('active');
   }
 
-  // サプリメントシートを別ウィンドウで印刷
+  // サプリメントシートを別ウィンドウで印刷/PDF出力
   function printCurrentSheet() {
     if (!currentSelectedLog) return;
+
+    const canvasPt = document.getElementById('modalCanvasPt');
+    const canvasPct = document.getElementById('modalCanvasPct');
+    
+    let imgPtSrc = canvasPt ? canvasPt.toDataURL('image/png') : '';
+    let imgPctSrc = canvasPct ? canvasPct.toDataURL('image/png') : '';
 
     const modalContent = document.getElementById('modal-body-content').innerHTML;
     const printWindow = window.open('', '_blank');
@@ -563,6 +687,13 @@
           body { font-family: sans-serif; color: #1e293b; margin: 0; padding: 0; background: #fff; }
           .no-print-bar { position: sticky; top: 0; background: #0f172a; color: #fff; padding: 10px; text-align: center; }
           .print-btn { background: #059669; color: #fff; border: none; padding: 8px 20px; font-size: 13px; font-weight: bold; border-radius: 4px; cursor: pointer; }
+          canvas { display: none !important; }
+          .chart-box { display: none !important; }
+          .chart-container-grid::before {
+            content: '';
+            display: block;
+            width: 100%;
+          }
           @media print { .no-print-bar { display: none !important; } }
         </style>
       </head>
@@ -570,9 +701,25 @@
         <div class="no-print-bar">
           <button class="print-btn" onclick="window.print()">🖨️ 印刷する / PDFとして保存</button>
         </div>
-        <div style="padding: 15mm 0;">
+        <div style="padding: 10mm 0;">
           ${modalContent}
         </div>
+        <script>
+          // Canvas要素を画像（img）に置き換えて印刷対応
+          const grid = document.querySelector('.chart-container-grid');
+          if (grid) {
+            grid.innerHTML = \`
+              <div style="flex:1; text-align:center;">
+                <div style="font-size:9.5px; font-weight:bold; color:#1e3a8a; margin-bottom:2px;">獲得DPポイント (合算pt)</div>
+                <img src="${imgPtSrc}" style="width:100%; max-width:260px; height:auto;">
+              </div>
+              <div style="flex:1; text-align:center;">
+                <div style="font-size:9.5px; font-weight:bold; color:#047857; margin-bottom:2px;">DP達成分布割合 (%)</div>
+                <img src="${imgPctSrc}" style="width:100%; max-width:260px; height:auto;">
+              </div>
+            \`;
+          }
+        <\/script>
       </body>
       </html>
     `);
