@@ -57,6 +57,23 @@
       color: #475569;
     }
 
+    /* ログイン認証画面カード */
+    .login-box {
+      max-width: 400px;
+      margin: 80px auto;
+      background: #ffffff;
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+      border: 1px solid var(--border);
+      text-align: center;
+    }
+    .login-box h2 {
+      margin-top: 0;
+      color: var(--primary);
+      font-size: 1.2rem;
+    }
+
     /* コントロールエリア */
     .controls-grid {
       display: grid;
@@ -77,7 +94,7 @@
       font-size: 0.85rem;
       color: #475569;
     }
-    input[type="text"], select {
+    input[type="text"], input[type="password"], select {
       width: 100%;
       padding: 8px 10px;
       border: 1px solid var(--border);
@@ -163,10 +180,11 @@
 
     /* メッセージエリア */
     .loading-box, .error-box {
-      padding: 24px;
+      padding: 12px 16px;
       text-align: center;
       border-radius: 8px;
       margin: 16px 0;
+      font-size: 0.88rem;
     }
     .loading-box { background: #eff6ff; color: #1e3a8a; border: 1px solid #bfdbfe; }
     .error-box { background: #fef2f2; color: #991b1b; border: 1px solid #fca5a5; }
@@ -243,10 +261,27 @@
 </head>
 <body>
 
-<div class="container">
+<!-- 1. ログイン認証画面 -->
+<div id="login-screen" class="login-box">
+  <h2>🔒 管理者認証</h2>
+  <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 16px;">
+    閲覧するには管理者パスワードを入力してください。
+  </p>
+  <div style="margin-bottom: 14px;">
+    <input type="password" id="password-input" placeholder="パスワードを入力" onkeydown="if(event.key==='Enter') submitLogin()">
+  </div>
+  <button class="btn btn-success" style="width: 100%;" onclick="submitLogin()">ログイン</button>
+  <div id="login-error-message" class="error-box" style="display: none;"></div>
+</div>
+
+<!-- 2. ログチェッカーメインコンテンツ（認証後に表示） -->
+<div id="main-app" class="container" style="display: none;">
   <h1>
     🔍 学修PDCA ログチェッカー
-    <span class="status-badge" id="last-update">未読み込み</span>
+    <div>
+      <span class="status-badge" id="last-update">未読み込み</span>
+      <button class="btn btn-secondary btn-sm" style="margin-left: 8px;" onclick="logout()">🔒 ログアウト</button>
+    </div>
   </h1>
 
   <!-- コントロールエリア -->
@@ -320,9 +355,7 @@
       <span style="font-weight: bold; font-size: 1.0rem;">📄 学修分析・PDCAサプリメントシート プレビュー</span>
       <button class="close-btn" onclick="closeModal()">✕</button>
     </div>
-    <div class="modal-body" id="modal-body-content">
-      <!-- サプリメントシートがここにレンダリングされます -->
-    </div>
+    <div class="modal-body" id="modal-body-content"></div>
     <div class="modal-footer">
       <button class="btn btn-secondary" onclick="closeModal()">閉じる</button>
       <button class="btn btn-success" onclick="printCurrentSheet()">🖨️ 印刷 / PDFで保存</button>
@@ -339,25 +372,60 @@
   let modalChartPctInstance = null;
 
   document.addEventListener('DOMContentLoaded', () => {
-    fetchLogs();
+    const savedPass = sessionStorage.getItem("log_checker_pass");
+    if (savedPass) {
+      fetchLogs(savedPass);
+    }
     document.getElementById('search-input').addEventListener('input', filterAndRenderLogs);
     document.getElementById('dept-filter').addEventListener('change', filterAndRenderLogs);
   });
 
-  // GASからログを取得する関数
-  async function fetchLogs() {
+  function submitLogin() {
+    const pass = document.getElementById('password-input').value.trim();
+    if (!pass) return;
+    fetchLogs(pass);
+  }
+
+  function logout() {
+    sessionStorage.removeItem("log_checker_pass");
+    document.getElementById('main-app').style.display = 'none';
+    document.getElementById('login-screen').style.display = 'block';
+    document.getElementById('password-input').value = '';
+    document.getElementById('login-error-message').style.display = 'none';
+  }
+
+  // GASからログを取得する関数（パスワード送信付き）
+  async function fetchLogs(passwordInput) {
+    const pass = passwordInput || sessionStorage.getItem("log_checker_pass") || "";
     const loadingEl = document.getElementById('loading-message');
     const errorEl = document.getElementById('error-message');
+    const loginErrEl = document.getElementById('login-error-message');
     const updateEl = document.getElementById('last-update');
 
     loadingEl.style.display = 'block';
     errorEl.style.display = 'none';
+    loginErrEl.style.display = 'none';
 
     try {
-      const response = await fetch(API_URL);
+      const fetchUrl = `${API_URL}?pass=${encodeURIComponent(pass)}`;
+      const response = await fetch(fetchUrl);
       if (!response.ok) throw new Error(`HTTPエラー: ${response.status}`);
       
       const resData = await response.json();
+
+      if (resData.status === "auth_failed") {
+        sessionStorage.removeItem("log_checker_pass");
+        loginErrEl.textContent = `⚠️ ${resData.message}`;
+        loginErrEl.style.display = 'block';
+        document.getElementById('main-app').style.display = 'none';
+        document.getElementById('login-screen').style.display = 'block';
+        return;
+      }
+
+      // 認証成功時
+      sessionStorage.setItem("log_checker_pass", pass);
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('main-app').style.display = 'block';
       
       if (Array.isArray(resData)) {
         allLogs = resData;
@@ -366,7 +434,7 @@
       } else if (resData.data && Array.isArray(resData.data)) {
         allLogs = resData.data;
       } else {
-        allLogs = [resData];
+        allLogs = [];
       }
 
       allLogs.reverse();
@@ -472,7 +540,6 @@
     }
   }
 
-  // W列のDP文字列（"項目: XX.Xpt / ..."）をパースする関数
   function parseDpSummary(dpSummaryText) {
     if (!dpSummaryText) return { labels: [], values: [] };
     const items = dpSummaryText.split('/');
@@ -492,7 +559,6 @@
     return { labels, values };
   }
 
-  // モーダル内でレーダーチャートを描画
   function renderModalCharts(dpSummaryText) {
     const parsed = parseDpSummary(dpSummaryText);
     if (parsed.labels.length === 0) return;
@@ -504,7 +570,6 @@
     if (modalChartPtInstance) modalChartPtInstance.destroy();
     if (modalChartPctInstance) modalChartPctInstance.destroy();
 
-    // 1. 合算ptチャート
     modalChartPtInstance = new Chart(canvasPt.getContext('2d'), {
       type: 'radar',
       data: {
@@ -532,7 +597,6 @@
       }
     });
 
-    // 2. 達成割合 (%) チャート (最高獲得pt項目を基準とした相対達成率分布)
     const maxVal = Math.max(...parsed.values, 1);
     const percentValues = parsed.values.map(v => parseFloat(((v / maxVal) * 100).toFixed(1)));
 
@@ -565,7 +629,6 @@
     });
   }
 
-  // モーダルでサプリメントシートを表示
   function openSheetModal(index) {
     const log = allLogs[index];
     if (!log) return;
@@ -605,7 +668,6 @@
           <div style="font-size:10px; color:#64748b; text-align:right;">記録日時：${currentDate}</div>
         </div>
 
-        <!-- 成績・単位サマリー -->
         <div style="display: flex; gap: 12px; margin-bottom: 12px;">
           <div style="flex: 1; border-radius: 6px; padding: 8px; text-align: center; background: #eff6ff; border: 1px solid #bfdbfe;">
             <div style="font-size: 10px; color: #1e3a8a; font-weight: bold;">総修得単位数</div>
@@ -617,7 +679,6 @@
           </div>
         </div>
 
-        <!-- DPレーダーチャートエリア -->
         <div style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; background: #fafafa; margin-bottom: 12px;">
           <div style="font-size: 11px; font-weight: bold; color: #0f172a; margin-bottom: 8px;">■ ディプロマ・ポリシー（DP）獲得能力分析</div>
           <div class="chart-container-grid">
@@ -632,13 +693,11 @@
           </div>
         </div>
 
-        <!-- 自動生成文章 -->
         <div style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; background: #ffffff; margin-bottom: 12px;">
           <div style="font-size: 11px; font-weight: bold; color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">■ 学修計画・目標分析文章</div>
           <div style="white-space: pre-wrap; font-size: 10.5px; line-height: 1.5; color: #334155; margin-top: 6px;">${generatedText}</div>
         </div>
 
-        <!-- 保有資格・活動実績 -->
         <div style="border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; background: #ffffff;">
           <div style="font-size: 11px; font-weight: bold; color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">■ 保有資格・表彰・活動実績</div>
           <div style="white-space: pre-wrap; font-size: 10.5px; line-height: 1.5; color: #334155; margin-top: 6px;">${achievements}</div>
@@ -648,7 +707,6 @@
 
     document.getElementById('sheet-modal').classList.add('active');
 
-    // モーダル描画後にチャートを初期化
     setTimeout(() => {
       renderModalCharts(dpSummary);
     }, 50);
@@ -658,7 +716,6 @@
     document.getElementById('sheet-modal').classList.remove('active');
   }
 
-  // サプリメントシートを別ウィンドウで印刷/PDF出力
   function printCurrentSheet() {
     if (!currentSelectedLog) return;
 
@@ -689,11 +746,6 @@
           .print-btn { background: #059669; color: #fff; border: none; padding: 8px 20px; font-size: 13px; font-weight: bold; border-radius: 4px; cursor: pointer; }
           canvas { display: none !important; }
           .chart-box { display: none !important; }
-          .chart-container-grid::before {
-            content: '';
-            display: block;
-            width: 100%;
-          }
           @media print { .no-print-bar { display: none !important; } }
         </style>
       </head>
@@ -705,7 +757,6 @@
           ${modalContent}
         </div>
         <script>
-          // Canvas要素を画像（img）に置き換えて印刷対応
           const grid = document.querySelector('.chart-container-grid');
           if (grid) {
             grid.innerHTML = \`
